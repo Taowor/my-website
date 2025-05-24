@@ -2,16 +2,48 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Contact Form</title>
+  <title>ส่งข้อมูลด้วย JS</title>
 </head>
 <body>
 
-<form action="https://script.google.com/macros/s/AKfycbzj8YZaOTi-WDXmtzXcSN7tv3jagdzRyvkJp3vhtRKEBobbTITQgZSs5uussN019TVh/exec" method="POST">
-  <input type="text" name="name" placeholder="ชื่อ" required>
-  <textarea name="message" placeholder="ข้อความ" required></textarea>
+<h2>ฟอร์มส่งข้อมูลไป Google Sheets (JavaScript)</h2>
+
+<form id="contact-form">
+  <input type="text" name="name" placeholder="ชื่อ" required><br><br>
+  <textarea name="message" placeholder="ข้อความ" required></textarea><br><br>
   <button type="submit">ส่ง</button>
 </form>
 
+<p id="status"></p>
+
+<script>
+  const form = document.getElementById("contact-form");
+  const status = document.getElementById("status");
+
+  form.addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const url = "https://script.google.com/macros/s/AKfycbzx_Ka5ArsP2T155MNdqNc5Y68VFy7SSsOxFA5KVwMSXxwdudGLrKBGOy2HFZ-6aB86/exec";
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await response.json();
+      if (result.result === "success") {
+        status.innerText = "✅ ส่งข้อมูลเรียบร้อยแล้ว!";
+        form.reset();
+      } else {
+        status.innerText = "❌ เกิดข้อผิดพลาดในการส่งข้อมูล";
+      }
+    } catch (error) {
+      status.innerText = "❌ การเชื่อมต่อล้มเหลว: " + error;
+    }
+  });
+</script>
+
 </body>
 </html>
-
