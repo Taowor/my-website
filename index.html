@@ -1,49 +1,312 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
+
 <head>
-  <meta charset="UTF-8">
-  <title>ส่งข้อมูลด้วย JS</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>โปรไฟล์ผู้ใช้</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap');
+
+    body {
+      background-color: #0a1a64;
+      margin: 0;
+      font-family: 'Prompt', sans-serif;
+    }
+
+    .header {
+      padding: 15px;
+      color: #ffffff;
+    }
+
+    .header .text {
+      font-weight: bold;
+      font-size: 20px;
+    }
+
+    .container {
+      display: grid;
+      padding: 10px;
+      background-color: aliceblue;
+      border-radius: 25px 25px 0 0;
+      font-weight: normal;
+    }
+
+    .environment {
+      display: grid;
+    }
+
+    .text-Title {
+      font-size: 16px;
+      color: #454545;
+      padding-left: 10PX;
+    }
+
+    .text-Time {
+      font-size: 10px;
+      font-weight: normal;
+      color: #6d6d6d;
+    }
+
+    .text-label {
+      color: #dedede;
+      font-size: 10px;
+    }
+
+    .text-value {
+      font-size: 14px;
+    }
+
+    .card-mainEnvi {
+      display: flex;
+      background-image: url('Background.png');
+      background-color: #ffffff;
+      border-radius: 15PX;
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+      padding: 20px;
+      margin-bottom: 10px;
+      /* text-align: center; */
+    }
+
+    .card-mainEnvi .column {
+      flex: 1;
+      padding: 0 10px;
+    }
+
+    .card-control {
+      display: flex;
+      background: #0a1a64;
+      border-radius: 15PX;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+      padding: 20px;
+      margin-bottom: 10px;
+    }
+
+    .card-detail {
+      display: flex;
+      background: #ffffff;
+      border-radius: 15PX;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+      padding: 20px;
+      margin-bottom: 10px;
+    }
+
+
+    /* ปุ่มปิดเปิดน้ำ*/
+    .toggle-container {
+      position: relative;
+      width: 60px;
+      height: 34px;
+      margin-right: 15px;
+    }
+
+    .toggle-checkbox {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-label {
+      position: absolute;
+      cursor: pointer;
+      background-color: #ccc;
+      border-radius: 34px;
+      width: 100%;
+      height: 100%;
+      transition: background-color 0.4s;
+    }
+
+    .toggle-label::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      height: 26px;
+      width: 26px;
+      background-color: white;
+      border-radius: 50%;
+      transition: transform 0.4s;
+    }
+
+    .toggle-checkbox:checked+.toggle-label {
+      background-color: #4c66ff;
+    }
+
+    .toggle-checkbox:checked+.toggle-label::before {
+      transform: translateX(26px);
+    }
+
+    .card-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .water-info {
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+    }
+
+    .water-log {
+      color: #6b6b6b;
+      font-size: 12px;
+    }
+  </style>
 </head>
+
 <body>
 
-<h2>ฟอร์มส่งข้อมูลไป Google Sheets (JavaScript)</h2>
+  <div class="header">
+    <div class="text">Tuawor Smart Farm</div>
+    <div class="text-Time" id="lastUpdate"></div>
+  </div>
+  <div class="container">
+    <div class="environment">
+      <div class="text-Title">ภาพรวมระบบ</div>
+      <div class="card-mainEnvi">
+        <div class="column">
+          <div class="column">
+            <div>
+              <div class="text-label">อุณหภูมิ</div>
+              <div class="text-value" id="temp">--</div>
+            </div>
+            <div>
+              <div class="text-label">ความชื้น</div>
+              <div class="text-value" id="humidity">--</div>
+            </div>
+            <div>
+              <div class="text-label">แสงแดด</div>
+              <div class="text-value" id="light">--</div>
+            </div>
+          </div>
+        </div>
+        <div class="column">
+          <div>
+            <div class="text-label">ปั้ม 01</div>
+            <div class="text-value" id="pump1">--</div>
+          </div>
+          <div>
+            <div class="text-label">ปั้ม 02</div>
+            <div class="text-value" id="pump2">--</div>
+          </div>
+          <div>
+            <div class="text-label">ปั้ม 03</div>
+            <div class="text-value" id="pump3">--</div>
+          </div>
+        </div>
+      </div>
 
-<form id="contact-form">
-  <input type="text" name="name" placeholder="ชื่อ" required><br><br>
-  <textarea name="message" placeholder="ข้อความ" required></textarea><br><br>
-  <button type="submit">ส่ง</button>
-</form>
+      <div class="text-Title">การควบคุม</div>
+      <div class="card-control">
 
-<p id="status"></p>
+        <div class="toggle-container">
+          <input type="checkbox" id="waterSwitch" class="toggle-checkbox" onchange="toggleWater()" />
+          <label for="waterSwitch" class="toggle-label"></label>
+        </div>
+        <div class="water-info">
+          <div id="waterStatusText">กำลังโหลดสถานะ...</div>
+          <div id="waterLogText" class="water-log">--</div>
+        </div>
 
-<script>
-  const form = document.getElementById("contact-form");
-  const status = document.getElementById("status");
+      </div>
 
-  form.addEventListener("submit", async function(e) {
-    e.preventDefault();
+      <div class="text-Title">รายละเอียด</div>
+      <div class="card-detail">
+        <p> </p>
+      </div>
 
-    const formData = new FormData(form);
-    const url = "https://script.google.com/macros/s/AKfycbzx_Ka5ArsP2T155MNdqNc5Y68VFy7SSsOxFA5KVwMSXxwdudGLrKBGOy2HFZ-6aB86/exec";
-
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        body: formData
-      });
-
-      const result = await response.json();
-      if (result.result === "success") {
-        status.innerText = "✅ ส่งข้อมูลเรียบร้อยแล้ว!";
-        form.reset();
-      } else {
-        status.innerText = "❌ เกิดข้อผิดพลาดในการส่งข้อมูล";
-      }
-    } catch (error) {
-      status.innerText = "❌ การเชื่อมต่อล้มเหลว: " + error;
-    }
-  });
-</script>
+    </div>
+  </div>
 
 </body>
+
+<script>
+  const sheetURL = "https://script.google.com/macros/s/AKfycbz4-SY84uzvjr0aHUxWMPyEgIfweCw-EcTOp498PN7w4Yb-Y7qB1qU73qMHxb3caMB84w/exec";
+  // ฟังก์ชันแสดงวัน-เดือน-ปี-เวลาแบบไทย
+  function getThaiDateTime(date) {
+    const days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+    const months = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+      "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+
+    const day = days[date.getDay()];
+    const d = date.getDate();
+    const m = months[date.getMonth()];
+    const y = date.getFullYear() + 543;
+    const h = date.getHours().toString().padStart(2, '0');
+    const min = date.getMinutes().toString().padStart(2, '0');
+    const sec = date.getSeconds().toString().padStart(2, '0');
+
+    return `วัน${day} ที่ ${d} ${m} พ.ศ. ${y} เวลา ${h}:${min} น.`;
+  }
+
+  async function loadData() {
+    try {
+      const res = await fetch(sheetURL);
+      const data = await res.json();
+
+      for (const key in data) {
+        if (data[key] === "" || data[key] === 0 || data[key] === null || data[key] === undefined) {
+          data[key] = "--";
+        }
+      }
+
+      document.getElementById("temp").textContent = data.temperature === "--" ? "--" : "🌡️" + data.temperature + "°C";
+      document.getElementById("humidity").textContent = data.humidity === "--" ? "--" : "💧" + data.humidity + "%";
+      document.getElementById("light").textContent = data.light === "--" ? "--" : "🌤️" + data.light + " Lux";
+
+      document.getElementById("pump1").textContent = data.pump1 === "ON" ? "⛈️ เปิด" : (data.pump1 === "OFF" ? "✊ ปิด" : "--");
+      document.getElementById("pump2").textContent = data.pump2 === "ON" ? "⛈️ เปิด" : (data.pump2 === "OFF" ? "✊ ปิด" : "--");
+      document.getElementById("pump3").textContent = data.pump3 === "ON" ? "⛈️ เปิด" : (data.pump3 === "OFF" ? "✊ ปิด" : "--");
+
+      const now = new Date();
+      document.getElementById("lastUpdate").textContent = getThaiDateTime(now);
+
+    } catch (error) {
+      console.error("ดึงข้อมูลไม่สำเร็จ:", error);
+    }
+  }
+
+  let waterStatus = false;
+
+  async function toggleWater() {
+    const isChecked = document.getElementById("waterSwitch").checked;
+    const newStatus = isChecked ? "ON" : "OFF";
+
+    try {
+      // ส่งคำสั่งไปยัง API หรือ Apps Script (แก้ URL จริง)
+      const res = await fetch(sheetURL+"?action=set&water="+newStatus);
+      const result = await res.json();
+
+      if (result.success) {
+        waterStatus = (newStatus === "ON");
+        updateWaterUI(waterStatus);
+      } else {
+        alert("สั่งงานไม่สำเร็จ");
+        document.getElementById("waterSwitch").checked = !isChecked;
+      }
+    } catch (error) {
+      alert("เชื่อมต่อไม่ได้");
+      console.error(error);
+      document.getElementById("waterSwitch").checked = !isChecked;
+    }
+  }
+
+  function updateWaterUI(status) {
+    const now = new Date();
+    document.getElementById("waterStatusText").textContent = status ? "สถานะ: น้ำเปิดอยู่ 💧" : "สถานะ: น้ำปิดอยู่ 🚫";
+    document.getElementById("waterLogText").textContent = `คำสั่งล่าสุด: ${status ? "เปิดน้ำ" : "ปิดน้ำ"}เมื่อ ${getThaiDateTime(now)}`;
+  }
+
+  window.onload = () => {
+    loadData();
+    setInterval(loadData, 1000); // รีโหลดทุก 10 วินาที
+  };
+</script>
+
+
+
 </html>
