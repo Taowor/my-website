@@ -92,8 +92,7 @@
       margin-bottom: 10px;
     }
 
-
-    /* ปุ่มปิดเปิดน้ำ*/
+/* Toggle switch style */
     .pump-group {
       display: flex;
       gap: 15px;
@@ -101,7 +100,6 @@
       /* หรือ center */
       flex-wrap: nowrap;
     }
-
     .pump-card {
       width: 30%;
       /* หรือใช้ค่าคงที่เช่น 250px */
@@ -109,35 +107,29 @@
       padding: 10px;
       border-radius: 15px;
       font-family: 'Prompt', sans-serif;
-      color: #939393;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      color: #2e2e2e;
+      box-shadow: 0 2px 6px rgba(255, 255, 255, 0.15);
     }
-
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-
     .pump-label {
       font-size: 12px;
       font-weight: bold;
     }
-
-    /* Toggle switch style */
     .switch {
       position: relative;
       display: inline-block;
       width: 40px;
       height: 22px;
     }
-
     .switch input {
       opacity: 0;
       width: 0;
       height: 0;
     }
-
     .slider {
       position: absolute;
       cursor: pointer;
@@ -149,7 +141,6 @@
       border-radius: 28px;
       transition: 0.4s;
     }
-
     .slider::before {
       position: absolute;
       content: "";
@@ -161,21 +152,17 @@
       border-radius: 50%;
       transition: 0.4s;
     }
-
     input:checked+.slider {
       background-color: #3b0ea3;
     }
-
     input:checked+.slider::before {
       transform: translateX(21px);
     }
-
     .card-info {
       margin-top: 8px;
       font-size: 10px;
       color: #333;
     }
-
   </style>
 </head>
 
