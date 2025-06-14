@@ -94,65 +94,88 @@
 
 
     /* ปุ่มปิดเปิดน้ำ*/
-    .toggle-container {
-      position: relative;
-      width: 60px;
-      height: 34px;
-      margin-right: 15px;
+    .pump-group {
+      display: flex;
+      gap: 15px;
+      justify-content: space-between;
+      /* หรือ center */
+      flex-wrap: nowrap;
     }
 
-    .toggle-checkbox {
+    .pump-card {
+      width: 30%;
+      /* หรือใช้ค่าคงที่เช่น 250px */
+      background: white;
+      padding: 10px;
+      border-radius: 15px;
+      font-family: 'Prompt', sans-serif;
+      color: #939393;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .pump-label {
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    /* Toggle switch style */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
+    }
+
+    .switch input {
       opacity: 0;
       width: 0;
       height: 0;
     }
 
-    .toggle-label {
+    .slider {
       position: absolute;
       cursor: pointer;
-      background-color: #ccc;
-      border-radius: 34px;
-      width: 100%;
-      height: 100%;
-      transition: background-color 0.4s;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #888;
+      border-radius: 28px;
+      transition: 0.4s;
     }
 
-    .toggle-label::before {
-      content: "";
+    .slider::before {
       position: absolute;
-      left: 4px;
-      top: 4px;
-      height: 26px;
-      width: 26px;
+      content: "";
+      height: 15px;
+      width: 15px;
+      left: 2px;
+      bottom: 3.5px;
       background-color: white;
       border-radius: 50%;
-      transition: transform 0.4s;
+      transition: 0.4s;
     }
 
-    .toggle-checkbox:checked+.toggle-label {
-      background-color: #4c66ff;
+    input:checked+.slider {
+      background-color: #3b0ea3;
     }
 
-    .toggle-checkbox:checked+.toggle-label::before {
-      transform: translateX(26px);
+    input:checked+.slider::before {
+      transform: translateX(21px);
     }
 
-    .card-control {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .card-info {
+      margin-top: 8px;
+      font-size: 10px;
+      color: #333;
     }
 
-    .water-info {
-      display: flex;
-      flex-direction: column;
-      font-size: 13px;
-    }
-
-    .water-log {
-      color: #6b6b6b;
-      font-size: 12px;
-    }
   </style>
 </head>
 
@@ -201,14 +224,53 @@
       <div class="text-Title">การควบคุม</div>
       <div class="card-control">
 
-        <div class="toggle-container">
-          <input type="checkbox" id="waterSwitch" class="toggle-checkbox" onchange="toggleWater()" />
-          <label for="waterSwitch" class="toggle-label"></label>
+        <div class="pump-group">
+          <!-- ปั๊ม 01 -->
+          <div class="pump-card">
+            <div class="card-header">
+              <span class="pump-label">ปั้ม <strong>01</strong></span>
+              <label class="switch">
+                <input type="checkbox" id="pump01Switch" onchange="togglePump(1)">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="card-info">
+              <div>สถานะ : <span id="pump01Status">--</span></div>
+              <div>เริ่ม : <span id="pump01Start">--:--</span> ค่าความชื้น : <span id="pump01Humidity">--°C</span></div>
+            </div>
+          </div>
+
+          <!-- ปั๊ม 02 -->
+          <div class="pump-card">
+            <div class="card-header">
+              <span class="pump-label">ปั้ม <strong>02</strong></span>
+              <label class="switch">
+                <input type="checkbox" id="pump02Switch" onchange="togglePump(2)">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="card-info">
+              <div>สถานะ : <span id="pump02Status">--</span></div>
+              <div>เริ่ม : <span id="pump02Start">--:--</span> ค่าความชื้น : <span id="pump02Humidity">--°C</span></div>
+            </div>
+          </div>
+
+          <!-- ปั๊ม 03 -->
+          <div class="pump-card">
+            <div class="card-header">
+              <span class="pump-label">ปั้ม <strong>03</strong></span>
+              <label class="switch">
+                <input type="checkbox" id="pump03Switch" onchange="togglePump(3)">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="card-info">
+              <div>สถานะ : <span id="pump03Status">--</span></div>
+              <div>เริ่ม : <span id="pump03Start">--:--</span> ค่าความชื้น : <span id="pump03Humidity">--°C</span></div>
+            </div>
+          </div>
         </div>
-        <div class="water-info">
-          <div id="waterStatusText">กำลังโหลดสถานะ...</div>
-          <div id="waterLogText" class="water-log">--</div>
-        </div>
+
 
       </div>
 
@@ -278,7 +340,7 @@
 
     try {
       // ส่งคำสั่งไปยัง API หรือ Apps Script (แก้ URL จริง)
-      const res = await fetch(sheetURL+"?action=set&water="+newStatus);
+      const res = await fetch(sheetURL + "?action=set&water=" + newStatus);
       const result = await res.json();
 
       if (result.success) {
