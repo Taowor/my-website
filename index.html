@@ -315,9 +315,11 @@
         }
       }
 
+      /*
       document.getElementById("temp").textContent = data.temperature === "--" ? "--" : "🌡️" + data.temperature + "°C";
       document.getElementById("humidity").textContent = data.humidity === "--" ? "--" : "💧" + data.humidity + "%";
       document.getElementById("light").textContent = data.light === "--" ? "--" : "🌤️" + data.light + " Lux";
+      */
 
       document.getElementById("pump1").textContent = data.pump1 === "ON" ? "⛈️ เปิด" : data.pump1 === "OFF" ? "✊ ปิด" : "--";
       document.getElementById("pump2").textContent = data.pump2 === "ON" ? "⛈️ เปิด" : data.pump2 === "OFF" ? "✊ ปิด" : "--";
@@ -395,10 +397,45 @@
     updatePumpStatus(pumpNumber, status);
   }
 
+  async function loadWeather() {
+    const apiKey = "3fe26da4919fb8c89e790fab6d6ab83f"; // ใช้ API Key ของคุณ
+    const lat = "13.7563";
+    const lon = "100.5018";
 
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=th&appid=${apiKey}`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("API Error: " + res.status);
+
+      const data = await res.json();
+
+      if (data.weather && data.weather.length > 0) {
+        const weather = data.weather[0].description;
+        const temp = data.main.temp;
+        const humidity = data.main.humidity;
+
+        // 🧠 ใส่ Emoji ตามเงื่อนไข
+        let weatherIcon = "🌤️"; // Default
+        if (weather.includes("ฝน")) weatherIcon = "🌧️";
+        else if (weather.includes("เมฆ")) weatherIcon = "⛅";
+        else if (weather.includes("แจ่มใส") || weather.includes("ฟ้าใส")) weatherIcon = "☀️";
+        else if (weather.includes("หมอก")) weatherIcon = "🌫️";
+
+        document.getElementById("light").textContent = `${weatherIcon} ${weather}`;
+        document.getElementById("temp").textContent = `🌡️ ${temp.toFixed(1)}°C`;
+        document.getElementById("humidity").textContent = `💧 ${humidity}%`;
+      } else {
+        throw new Error("ข้อมูล weather ไม่สมบูรณ์");
+      }
+    } catch (err) {
+      console.error("โหลดข้อมูลสภาพอากาศล้มเหลว:", err);
+    }
+  }
 
   window.onload = () => {
     loadData();
+    loadWeather();
     setInterval(loadData, 1000); // รีโหลดทุก 10 วินาที
   };
 </script>
