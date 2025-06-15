@@ -7,12 +7,12 @@
   <title>โปรไฟล์ผู้ใช้</title>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap');
+    @import url("https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap");
 
     body {
       background-color: #0a1a64;
       margin: 0;
-      font-family: 'Prompt', sans-serif;
+      font-family: "Prompt", sans-serif;
     }
 
     .header {
@@ -40,7 +40,7 @@
     .text-Title {
       font-size: 16px;
       color: #454545;
-      padding-left: 10PX;
+      padding-left: 10px;
     }
 
     .text-Time {
@@ -60,9 +60,9 @@
 
     .card-mainEnvi {
       display: flex;
-      background-image: url('Background.png');
+      background-image: url("Background.png");
       background-color: #ffffff;
-      border-radius: 15PX;
+      border-radius: 15px;
       box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
       padding: 20px;
       margin-bottom: 10px;
@@ -77,7 +77,7 @@
     .card-control {
       display: flex;
       background: #0a1a64;
-      border-radius: 15PX;
+      border-radius: 15px;
       box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
       padding: 20px;
       margin-bottom: 10px;
@@ -86,13 +86,13 @@
     .card-detail {
       display: flex;
       background: #ffffff;
-      border-radius: 15PX;
+      border-radius: 15px;
       box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
       padding: 20px;
       margin-bottom: 10px;
     }
 
-/* Toggle switch style */
+    /* Toggle switch style */
     .pump-group {
       display: flex;
       gap: 15px;
@@ -100,36 +100,42 @@
       /* หรือ center */
       flex-wrap: nowrap;
     }
+
     .pump-card {
       width: 30%;
       /* หรือใช้ค่าคงที่เช่น 250px */
       background: white;
       padding: 10px;
       border-radius: 15px;
-      font-family: 'Prompt', sans-serif;
+      font-family: "Prompt", sans-serif;
       color: #2e2e2e;
       box-shadow: 0 2px 6px rgba(255, 255, 255, 0.15);
     }
+
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
+
     .pump-label {
       font-size: 12px;
       font-weight: bold;
     }
+
     .switch {
       position: relative;
       display: inline-block;
       width: 40px;
       height: 22px;
     }
+
     .switch input {
       opacity: 0;
       width: 0;
       height: 0;
     }
+
     .slider {
       position: absolute;
       cursor: pointer;
@@ -141,6 +147,7 @@
       border-radius: 28px;
       transition: 0.4s;
     }
+
     .slider::before {
       position: absolute;
       content: "";
@@ -152,12 +159,15 @@
       border-radius: 50%;
       transition: 0.4s;
     }
+
     input:checked+.slider {
       background-color: #3b0ea3;
     }
+
     input:checked+.slider::before {
       transform: translateX(21px);
     }
+
     .card-info {
       margin-top: 8px;
       font-size: 10px;
@@ -167,7 +177,6 @@
 </head>
 
 <body>
-
   <div class="header">
     <div class="text">Tuawor Smart Farm</div>
     <div class="text-Time" id="lastUpdate"></div>
@@ -210,20 +219,23 @@
 
       <div class="text-Title">การควบคุม</div>
       <div class="card-control">
-
         <div class="pump-group">
+
           <!-- ปั๊ม 01 -->
           <div class="pump-card">
             <div class="card-header">
               <span class="pump-label">ปั้ม <strong>01</strong></span>
               <label class="switch">
-                <input type="checkbox" id="pump01Switch" onchange="togglePump(1)">
+                <input type="checkbox" id="pump01Switch" onchange="togglePump(1)" />
                 <span class="slider"></span>
               </label>
             </div>
             <div class="card-info">
               <div>สถานะ : <span id="pump01Status">--</span></div>
-              <div>เริ่ม : <span id="pump01Start">--:--</span> ค่าความชื้น : <span id="pump01Humidity">--°C</span></div>
+              <div>
+                เริ่ม : <span id="pump01Start">--:--</span> ค่าความชื้น :
+                <span id="pump01Humidity">--°C</span>
+              </div>
             </div>
           </div>
 
@@ -232,13 +244,16 @@
             <div class="card-header">
               <span class="pump-label">ปั้ม <strong>02</strong></span>
               <label class="switch">
-                <input type="checkbox" id="pump02Switch" onchange="togglePump(2)">
+                <input type="checkbox" id="pump02Switch" onchange="togglePump(2)" />
                 <span class="slider"></span>
               </label>
             </div>
             <div class="card-info">
               <div>สถานะ : <span id="pump02Status">--</span></div>
-              <div>เริ่ม : <span id="pump02Start">--:--</span> ค่าความชื้น : <span id="pump02Humidity">--°C</span></div>
+              <div>
+                เริ่ม : <span id="pump02Start">--:--</span> ค่าความชื้น :
+                <span id="pump02Humidity">--°C</span>
+              </div>
             </div>
           </div>
 
@@ -247,51 +262,48 @@
             <div class="card-header">
               <span class="pump-label">ปั้ม <strong>03</strong></span>
               <label class="switch">
-                <input type="checkbox" id="pump03Switch" onchange="togglePump(3)">
+                <input type="checkbox" id="pump03Switch" onchange="togglePump(3)" />
                 <span class="slider"></span>
               </label>
             </div>
             <div class="card-info">
               <div>สถานะ : <span id="pump03Status">--</span></div>
-              <div>เริ่ม : <span id="pump03Start">--:--</span> ค่าความชื้น : <span id="pump03Humidity">--°C</span></div>
+              <div>
+                เริ่ม : <span id="pump03Start">--:--</span> ค่าความชื้น :
+                <span id="pump03Humidity">--°C</span>
+              </div>
             </div>
           </div>
         </div>
-
-
       </div>
 
       <div class="text-Title">รายละเอียด</div>
       <div class="card-detail">
-        <p> </p>
+        <p></p>
       </div>
-
     </div>
   </div>
-
 </body>
 
 <script>
-  const sheetURL = "https://script.google.com/macros/s/AKfycbz4-SY84uzvjr0aHUxWMPyEgIfweCw-EcTOp498PN7w4Yb-Y7qB1qU73qMHxb3caMB84w/exec";
+  const sheetURL = "https://script.google.com/macros/s/AKfycbxCZtqh7Q9mc7c8fWYn7RmCa-ytqu75DF9aTrdyRK6zvrDXr0AEKX6M17_z-NiRlEmkjQ/exec";
   // ฟังก์ชันแสดงวัน-เดือน-ปี-เวลาแบบไทย
   function getThaiDateTime(date) {
-    const days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
-    const months = [
-      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-      "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
-    ];
+    const days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์",];
+    const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",];
 
     const day = days[date.getDay()];
     const d = date.getDate();
     const m = months[date.getMonth()];
     const y = date.getFullYear() + 543;
-    const h = date.getHours().toString().padStart(2, '0');
-    const min = date.getMinutes().toString().padStart(2, '0');
-    const sec = date.getSeconds().toString().padStart(2, '0');
-
-    return `วัน${day} ที่ ${d} ${m} พ.ศ. ${y} เวลา ${h}:${min} น.`;
+    const h = date.getHours().toString().padStart(2, "0");
+    const min = date.getMinutes().toString().padStart(2, "0");
+    const sec = date.getSeconds().toString().padStart(2, "0");
+    const fullText = `วัน${day} ที่ ${d} ${m} พ.ศ. ${y} เวลา ${h}:${min} น.`;
+    return [day, fullText, d, m, y, h, min, sec];
   }
 
+  let firstLoad = true;
   async function loadData() {
     try {
       const res = await fetch(sheetURL);
@@ -307,55 +319,88 @@
       document.getElementById("humidity").textContent = data.humidity === "--" ? "--" : "💧" + data.humidity + "%";
       document.getElementById("light").textContent = data.light === "--" ? "--" : "🌤️" + data.light + " Lux";
 
-      document.getElementById("pump1").textContent = data.pump1 === "ON" ? "⛈️ เปิด" : (data.pump1 === "OFF" ? "✊ ปิด" : "--");
-      document.getElementById("pump2").textContent = data.pump2 === "ON" ? "⛈️ เปิด" : (data.pump2 === "OFF" ? "✊ ปิด" : "--");
-      document.getElementById("pump3").textContent = data.pump3 === "ON" ? "⛈️ เปิด" : (data.pump3 === "OFF" ? "✊ ปิด" : "--");
+      document.getElementById("pump1").textContent = data.pump1 === "ON" ? "⛈️ เปิด" : data.pump1 === "OFF" ? "✊ ปิด" : "--";
+      document.getElementById("pump2").textContent = data.pump2 === "ON" ? "⛈️ เปิด" : data.pump2 === "OFF" ? "✊ ปิด" : "--";
+      document.getElementById("pump3").textContent = data.pump3 === "ON" ? "⛈️ เปิด" : data.pump3 === "OFF" ? "✊ ปิด" : "--";
+
+      // ✅ ตั้งค่า checkbox switch ให้ตรงกับสถานะจริง
+      if (firstLoad) {
+        document.getElementById("pump01Switch").checked = data.pump1 === "ON";
+        document.getElementById("pump02Switch").checked = data.pump2 === "ON";
+        document.getElementById("pump03Switch").checked = data.pump3 === "ON";
+        firstLoad = false;
+      }
+      /*
+      // ✅ ตั้งค่าข้อความสถานะให้ตรง
+      document.getElementById("pump01Status").textContent = data.pump1 === "ON" ? "เปิด" : "ปิด";
+      document.getElementById("pump02Status").textContent = data.pump2 === "ON" ? "เปิด" : "ปิด";
+      document.getElementById("pump03Status").textContent = data.pump3 === "ON" ? "เปิด" : "ปิด";
+
+      // ✅ ตั้งค่าเวลาเริ่มเป็น "ไม่ระบุ" ถ้าไม่ได้เปิด
+      document.getElementById("pump01Start").textContent = data.pump1 === "ON" ? "--:--" : "--:--";
+      document.getElementById("pump02Start").textContent = data.pump2 === "ON" ? "--:--" : "--:--";
+      document.getElementById("pump03Start").textContent = data.pump3 === "ON" ? "--:--" : "--:--";
+
+      // ✅ ตั้งค่าความชื้นเป็น "--°C" หากยังไม่ทำงาน
+      document.getElementById("pump01Humidity").textContent = "--°C";
+      document.getElementById("pump02Humidity").textContent = "--°C";
+      document.getElementById("pump03Humidity").textContent = "--°C";
+      */
 
       const now = new Date();
-      document.getElementById("lastUpdate").textContent = getThaiDateTime(now);
+      const dataTime = getThaiDateTime(now);
+      const thaiDateTime = dataTime[1];
 
+      document.getElementById("lastUpdate").textContent = thaiDateTime;
     } catch (error) {
       console.error("ดึงข้อมูลไม่สำเร็จ:", error);
     }
   }
 
-  let waterStatus = false;
+  function updatePumpStatus(pumpNumber, status) {
+    const url = `${sheetURL}?action=updatePump${pumpNumber}&status=${status}`;
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data.message);
 
-  async function toggleWater() {
-    const isChecked = document.getElementById("waterSwitch").checked;
-    const newStatus = isChecked ? "ON" : "OFF";
+        // ✅ โหลดข้อมูลใหม่ทันที หลังอัปเดตสถานะปั๊ม
+        loadData();
+      })
+      .catch((err) => {
+        console.error("อัปเดตปั๊มล้มเหลว:", err);
+      });
+  }
 
-    try {
-      // ส่งคำสั่งไปยัง API หรือ Apps Script (แก้ URL จริง)
-      const res = await fetch(sheetURL + "?action=set&water=" + newStatus);
-      const result = await res.json();
 
-      if (result.success) {
-        waterStatus = (newStatus === "ON");
-        updateWaterUI(waterStatus);
-      } else {
-        alert("สั่งงานไม่สำเร็จ");
-        document.getElementById("waterSwitch").checked = !isChecked;
-      }
-    } catch (error) {
-      alert("เชื่อมต่อไม่ได้");
-      console.error(error);
-      document.getElementById("waterSwitch").checked = !isChecked;
+
+  function togglePump(pumpNumber) {
+    const isChecked = document.getElementById(`pump0${pumpNumber}Switch`).checked;
+    const status = isChecked ? "ON" : "OFF";
+
+    // อัปเดตในหน้าเว็บ
+    document.getElementById(`pump0${pumpNumber}Status`).textContent = isChecked ? "เปิด" : "ปิด";
+
+    if (isChecked) {
+      const now = new Date();
+      const time = now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0");
+      document.getElementById(`pump0${pumpNumber}Start`).textContent = time;
+      document.getElementById(`pump0${pumpNumber}Humidity`).textContent = Math.floor(Math.random() * 50 + 30) + "°C";
+    } else {
+      document.getElementById(`pump0${pumpNumber}Start`).textContent = "--:--";
+      document.getElementById(`pump0${pumpNumber}Humidity`).textContent = "--°C";
     }
+
+    // 🔁 อัปเดตข้อมูลไปยัง Google Sheet
+    updatePumpStatus(pumpNumber, status);
   }
 
-  function updateWaterUI(status) {
-    const now = new Date();
-    document.getElementById("waterStatusText").textContent = status ? "สถานะ: น้ำเปิดอยู่ 💧" : "สถานะ: น้ำปิดอยู่ 🚫";
-    document.getElementById("waterLogText").textContent = `คำสั่งล่าสุด: ${status ? "เปิดน้ำ" : "ปิดน้ำ"}เมื่อ ${getThaiDateTime(now)}`;
-  }
+
 
   window.onload = () => {
     loadData();
-    setInterval(loadData, 1000); // รีโหลดทุก 10 วินาที
+    setInterval(loadData, 200); // รีโหลดทุก 10 วินาที
   };
 </script>
-
-
 
 </html>
