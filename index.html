@@ -286,7 +286,7 @@
 </body>
 
 <script>
-  const sheetURL = "https://script.google.com/macros/s/AKfycbxCZtqh7Q9mc7c8fWYn7RmCa-ytqu75DF9aTrdyRK6zvrDXr0AEKX6M17_z-NiRlEmkjQ/exec";
+  const sheetURL = "https://script.google.com/macros/s/AKfycbzwp86Ox1JEPcrnAUAdj5h95phQqdoofbi20RwAj-7dGxF_pHOk-6Cq5fVWRfmlLQDR1g/exec";
   // ฟังก์ชันแสดงวัน-เดือน-ปี-เวลาแบบไทย
   function getThaiDateTime(date) {
     const days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์",];
@@ -308,7 +308,7 @@
     try {
       const res = await fetch(sheetURL);
       const data = await res.json();
-      goFullscreen();
+      //goFullscreen();
 
       for (const key in data) {
         if (data[key] === "" || data[key] === 0 || data[key] === null || data[key] === undefined) {
@@ -433,6 +433,7 @@
       console.error("โหลดข้อมูลสภาพอากาศล้มเหลว:", err);
     }
   }
+
   function goFullscreen() {
     const el = document.documentElement;
     if (el.requestFullscreen) {
