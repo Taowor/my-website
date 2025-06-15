@@ -308,6 +308,7 @@
     try {
       const res = await fetch(sheetURL);
       const data = await res.json();
+      goFullscreen();
 
       for (const key in data) {
         if (data[key] === "" || data[key] === 0 || data[key] === null || data[key] === undefined) {
@@ -430,6 +431,16 @@
       }
     } catch (err) {
       console.error("โหลดข้อมูลสภาพอากาศล้มเหลว:", err);
+    }
+  }
+  function goFullscreen() {
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen();
+    } else if (el.webkitRequestFullscreen) { /* Safari */
+      el.webkitRequestFullscreen();
+    } else if (el.msRequestFullscreen) { /* IE11 */
+      el.msRequestFullscreen();
     }
   }
 
