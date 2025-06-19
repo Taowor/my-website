@@ -6,6 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>โปรไฟล์ผู้ใช้</title>
 
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap");
 
@@ -286,170 +291,77 @@
 </body>
 
 <script>
-  const sheetURL = "https://script.google.com/macros/s/AKfycbx7nQLoa0v7hyTHN6BffHI1wb79aO-Ol1lYnYKtGqUZXH9QXKfMtPbEV6jnZ5cNSYAMaw/exec";
-  // ฟังก์ชันแสดงวัน-เดือน-ปี-เวลาแบบไทย
-  function getThaiDateTime(date) {
-    const days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์",];
-    const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",];
+  // 👇 Firebase config (เปลี่ยนเป็นของคุณถ้ายังไม่ใส่)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCorsisrGvyszMUQ6NpN5d_5XMa-j9Msj0",
+    authDomain: "tuaworsmartfarm.firebaseapp.com",
+    databaseURL: "https://tuaworsmartfarm-default-rtdb.firebaseio.com",
+    projectId: "tuaworsmartfarm",
+    storageBucket: "tuaworsmartfarm.appspot.com",
+    messagingSenderId: "605653634791",
+    appId: "1:605653634791:web:ec3f48c97a919a36795972",
+    measurementId: "G-BCPSSE04C6"
+  };
 
+  // 🔥 Init Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  function getThaiDateTime(date) {
+    const days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+    const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
     const day = days[date.getDay()];
     const d = date.getDate();
     const m = months[date.getMonth()];
     const y = date.getFullYear() + 543;
     const h = date.getHours().toString().padStart(2, "0");
     const min = date.getMinutes().toString().padStart(2, "0");
-    const sec = date.getSeconds().toString().padStart(2, "0");
-    const fullText = `วัน${day} ที่ ${d} ${m} พ.ศ. ${y} เวลา ${h}:${min} น.`;
-    return [day, fullText, d, m, y, h, min, sec];
+    return `วัน${day} ที่ ${d} ${m} พ.ศ. ${y} เวลา ${h}:${min} น.`;
   }
 
-  let firstLoad = true;
-  async function loadData() {
-    try {
-      const res = await fetch(sheetURL);
-      const data = await res.json();
-      //goFullscreen();
+  function loadDataFromFirebase() {
+    // อ่าน sensor
+    db.ref("sensor").on("value", (snap) => {
+      const data = snap.val();
+      document.getElementById("temp").textContent = `🌡️ ${data.temp}°C`;
+      document.getElementById("humidity").textContent = `💧 ${data.humidity}%`;
+      document.getElementById("light").textContent = `🌞 ดิน ${data.soil}%`;
+    });
 
-      for (const key in data) {
-        if (data[key] === "" || data[key] === 0 || data[key] === null || data[key] === undefined) {
-          data[key] = "--";
-        }
-      }
-
-      /*
-      document.getElementById("temp").textContent = data.temperature === "--" ? "--" : "🌡️" + data.temperature + "°C";
-      document.getElementById("humidity").textContent = data.humidity === "--" ? "--" : "💧" + data.humidity + "%";
-      document.getElementById("light").textContent = data.light === "--" ? "--" : "🌤️" + data.light + " Lux";
-      */
-
-      document.getElementById("pump1").textContent = data.pump1 === "ON" ? "⛈️ เปิด" : data.pump1 === "OFF" ? "✊ ปิด" : "--";
-      document.getElementById("pump2").textContent = data.pump2 === "ON" ? "⛈️ เปิด" : data.pump2 === "OFF" ? "✊ ปิด" : "--";
-      document.getElementById("pump3").textContent = data.pump3 === "ON" ? "⛈️ เปิด" : data.pump3 === "OFF" ? "✊ ปิด" : "--";
-
-      // ✅ ตั้งค่า checkbox switch ให้ตรงกับสถานะจริง
-      if (firstLoad) {
-        document.getElementById("pump01Switch").checked = data.pump1 === "ON";
-        document.getElementById("pump02Switch").checked = data.pump2 === "ON";
-        document.getElementById("pump03Switch").checked = data.pump3 === "ON";
-        firstLoad = false;
-      }
-      /*
-      // ✅ ตั้งค่าข้อความสถานะให้ตรง
-      document.getElementById("pump01Status").textContent = data.pump1 === "ON" ? "เปิด" : "ปิด";
-      document.getElementById("pump02Status").textContent = data.pump2 === "ON" ? "เปิด" : "ปิด";
-      document.getElementById("pump03Status").textContent = data.pump3 === "ON" ? "เปิด" : "ปิด";
-
-      // ✅ ตั้งค่าเวลาเริ่มเป็น "ไม่ระบุ" ถ้าไม่ได้เปิด
-      document.getElementById("pump01Start").textContent = data.pump1 === "ON" ? "--:--" : "--:--";
-      document.getElementById("pump02Start").textContent = data.pump2 === "ON" ? "--:--" : "--:--";
-      document.getElementById("pump03Start").textContent = data.pump3 === "ON" ? "--:--" : "--:--";
-
-      // ✅ ตั้งค่าความชื้นเป็น "--°C" หากยังไม่ทำงาน
-      document.getElementById("pump01Humidity").textContent = "--°C";
-      document.getElementById("pump02Humidity").textContent = "--°C";
-      document.getElementById("pump03Humidity").textContent = "--°C";
-      */
-
-      const now = new Date();
-      const dataTime = getThaiDateTime(now);
-      const thaiDateTime = dataTime[1];
-
-      document.getElementById("lastUpdate").textContent = thaiDateTime;
-    } catch (error) {
-      console.error("ดึงข้อมูลไม่สำเร็จ:", error);
-    }
-  }
-
-  function updatePumpStatus(pumpNumber, status) {
-    const url = `${sheetURL}?action=updatePump${pumpNumber}&status=${status}`;
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data.message);
-
-        // ✅ โหลดข้อมูลใหม่ทันที หลังอัปเดตสถานะปั๊ม
-        loadData();
-      })
-      .catch((err) => {
-        console.error("อัปเดตปั๊มล้มเหลว:", err);
+    // อ่านสถานะปั๊มทั้ง 3 ตัว
+    for (let i = 1; i <= 3; i++) {
+      const pumpRef = db.ref(`pump_0${i}`);
+      pumpRef.on("value", (snap) => {
+        const val = snap.val();
+        const statusText = val.status === "ON" ? "⛈️ เปิด" : "✊ ปิด";
+        document.getElementById(`pump${i}`).textContent = statusText;
+        document.getElementById(`pump0${i}Switch`).checked = val.status === "ON";
+        document.getElementById(`pump0${i}Status`).textContent = val.status === "ON" ? "เปิด" : "ปิด";
       });
+    }
+
+    document.getElementById("lastUpdate").textContent = getThaiDateTime(new Date());
   }
-
-
 
   function togglePump(pumpNumber) {
     const isChecked = document.getElementById(`pump0${pumpNumber}Switch`).checked;
     const status = isChecked ? "ON" : "OFF";
 
-    // อัปเดตในหน้าเว็บ
+    db.ref(`pump_0${pumpNumber}/status`).set(status);
+
+    // แสดงข้อมูลในหน้าเว็บทันที
+    const now = new Date();
+    const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
     document.getElementById(`pump0${pumpNumber}Status`).textContent = isChecked ? "เปิด" : "ปิด";
-
-    if (isChecked) {
-      const now = new Date();
-      const time = now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0");
-      document.getElementById(`pump0${pumpNumber}Start`).textContent = time;
-      document.getElementById(`pump0${pumpNumber}Humidity`).textContent = Math.floor(Math.random() * 50 + 30) + "°C";
-    } else {
-      document.getElementById(`pump0${pumpNumber}Start`).textContent = "--:--";
-      document.getElementById(`pump0${pumpNumber}Humidity`).textContent = "--°C";
-    }
-
-    // 🔁 อัปเดตข้อมูลไปยัง Google Sheet
-    updatePumpStatus(pumpNumber, status);
-  }
-
-  async function loadWeather() {
-    const apiKey = "3fe26da4919fb8c89e790fab6d6ab83f"; // ใช้ API Key ของคุณ
-    const lat = "13.7563";
-    const lon = "100.5018";
-
-    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=th&appid=${apiKey}`;
-
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("API Error: " + res.status);
-
-      const data = await res.json();
-
-      if (data.weather && data.weather.length > 0) {
-        const weather = data.weather[0].description;
-        const temp = data.main.temp;
-        const humidity = data.main.humidity;
-
-        // 🧠 ใส่ Emoji ตามเงื่อนไข
-        let weatherIcon = "🌤️"; // Default
-        if (weather.includes("ฝน")) weatherIcon = "🌧️";
-        else if (weather.includes("เมฆ")) weatherIcon = "⛅";
-        else if (weather.includes("แจ่มใส") || weather.includes("ฟ้าใส")) weatherIcon = "☀️";
-        else if (weather.includes("หมอก")) weatherIcon = "🌫️";
-
-        document.getElementById("light").textContent = `${weatherIcon} ${weather}`;
-        document.getElementById("temp").textContent = `🌡️ ${temp.toFixed(1)}°C`;
-        document.getElementById("humidity").textContent = `💧 ${humidity}%`;
-      } else {
-        throw new Error("ข้อมูล weather ไม่สมบูรณ์");
-      }
-    } catch (err) {
-      console.error("โหลดข้อมูลสภาพอากาศล้มเหลว:", err);
-    }
-  }
-
-  function goFullscreen() {
-    const el = document.documentElement;
-    if (el.requestFullscreen) {
-      el.requestFullscreen();
-    } else if (el.webkitRequestFullscreen) { /* Safari */
-      el.webkitRequestFullscreen();
-    } else if (el.msRequestFullscreen) { /* IE11 */
-      el.msRequestFullscreen();
-    }
+    document.getElementById(`pump0${pumpNumber}Start`).textContent = isChecked ? time : "--:--";
+    document.getElementById(`pump0${pumpNumber}Humidity`).textContent = isChecked ? (Math.floor(Math.random() * 50 + 30) + "°C") : "--°C";
   }
 
   window.onload = () => {
-    loadData();
-    loadWeather();
-    setInterval(loadData, 1000); // รีโหลดทุก 10 วินาที
+    loadDataFromFirebase();
+    loadWeather(); // ฟังก์ชันนี้ใช้ API OpenWeather ได้เหมือนเดิม
   };
 </script>
+
 
 </html>
