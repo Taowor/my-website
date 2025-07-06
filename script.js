@@ -14,81 +14,6 @@ const pumpModes = {};
 let globalConfig = {};
 const pumps = [1, 2, 3];
 
-function getThaiDateTime(date) {
-  const d = date.getDate(),
-    m = date.getMonth() + 1,
-    y = date.getFullYear() + 543;
-  const h = date.getHours().toString().padStart(2, "0");
-  const min = date.getMinutes().toString().padStart(2, "0");
-  return `วันที่ ${d}/${m}/${y} เวลา ${h}:${min} น.`;
-}
-
-async function loadWeather() {
-  const res = await fetch(
-    "https://api.openweathermap.org/data/2.5/weather?lat=13.7563&lon=100.5018&units=metric&lang=th&appid=3fe26da4919fb8c89e790fab6d6ab83f"
-  );
-  const data = await res.json();
-
-  const temp = data.main.temp.toFixed(1);
-  const humidity = data.main.humidity;
-  const light = data.weather[0].description;
-
-  const tempEl = document.getElementById("temp");
-  if (tempEl) tempEl.textContent = `🌡️ ${temp}°C`;
-
-  const humidityEl = document.getElementById("humidity");
-  if (humidityEl) humidityEl.textContent = `💧 ${humidity}%`;
-
-  const lightEl = document.getElementById("light");
-  if (lightEl) lightEl.textContent = `🌤️ ${light}`;
-
-  return { temp: parseFloat(temp), humidity, light };
-}
-
-function togglePump(pump) {
-  const sw = document.getElementById(`pump0${pump}Switch`);
-  const status = sw.checked ? "ON" : "OFF";
-  db.ref(`pump_0${pump}/status`).set(status);
-  document.getElementById(`pump0${pump}Status`).textContent = sw.checked
-    ? "เปิด"
-    : "ปิด";
-  const now = new Date();
-  const time = `${now.getHours().toString().padStart(2, "0")}:${now
-    .getMinutes()
-    .toString()
-    .padStart(2, "0")}`;
-  document.getElementById(`pump0${pump}Start`).textContent = sw.checked
-    ? time
-    : "--:--";
-  document.getElementById(`pump0${pump}Humidity`).textContent = sw.checked
-    ? Math.floor(Math.random() * 30 + 30) + "°C"
-    : "--°C";
-}
-
-function autoControl() {
-  if (!globalConfig || Object.keys(pumpModes).length < 3) return;
-  const now = new Date();
-  const nowTime = `${now.getHours().toString().padStart(2, "0")}:${now
-    .getMinutes()
-    .toString()
-    .padStart(2, "0")}`;
-  const tempText = (document.getElementById("temp") || {}).textContent || "";
-  const temp = parseFloat((tempText.match(/([\d.]+)/) || [])[0] || 0);
-
-  for (let i = 1; i <= 3; i++) {
-    if (pumpModes[i] === "auto") {
-      const { startTime, endTime, tempThreshold } = globalConfig;
-      const shouldOn =
-        startTime <= nowTime && nowTime <= endTime && temp > tempThreshold;
-      db.ref(`pump_0${i}/status`).set(shouldOn ? "ON" : "OFF");
-      document.getElementById(`pump0${i}Switch`).checked = shouldOn;
-      document.getElementById(`pump0${i}Status`).textContent = shouldOn
-        ? "เปิด"
-        : "ปิด";
-    }
-  }
-}
-
 function loadDataFromFirebase() {
   return new Promise((resolve) => {
     const totalToLoad = 1 + pumps.length;
@@ -106,27 +31,110 @@ function loadDataFromFirebase() {
 
     for (let i of pumps) {
       db.ref(`pump_0${i}`).on("value", (snap) => {
-        const val = snap.val();
+        const val = snap.val() || {};
         pumpModes[i] = val.mode || "manual";
 
         const statusEl = document.getElementById(`pump${i}`);
-        if (statusEl)
-          statusEl.textContent = val.status === "ON" ? "⛈️ เปิด" : "✊ ปิด";
+        if (statusEl) statusEl.textContent = val.status === "ON" ? "⛈️ เปิด" : "✊ ปิด";
 
-        document.getElementById(`pump0${i}Switch`).checked =
-          val.status === "ON";
-        document.getElementById(`pump0${i}Switch`).disabled =
-          pumpModes[i] === "auto";
-        document.getElementById(`pump0${i}Status`).textContent =
-          val.status === "ON" ? "เปิด" : "ปิด";
+        const sw = document.getElementById(`pump0${i}Switch`);
+        const statusText = document.getElementById(`pump0${i}Status`);
+        const modeText = document.getElementById(`pump0${i}Mode`);
+        if (sw) {
+          sw.checked = val.status === "ON";
+          sw.disabled = pumpModes[i] === "auto";
+        }
+        if (statusText) statusText.textContent = val.status === "ON" ? "เปิด" : "ปิด";
+        if (modeText) modeText.textContent = pumpModes[i] === "auto" ? "Auto" : "Manual";
 
         checkLoaded();
       });
     }
-
-    const updateEl = document.getElementById("lastUpdate");
-    if (updateEl) updateEl.textContent = getThaiDateTime(new Date());
   });
+}
+
+function autoControl() {
+  if (!globalConfig || Object.keys(pumpModes).length < 3) return;
+
+  const now = new Date();
+  const { time: nowTime } = getDateTime(now); // ดึงเวลา HH:mm
+  const tempText = (document.getElementById("temp") || {}).textContent || "";
+  const temp = parseFloat((tempText.match(/([\d.]+)/) || [])[0] || 0);
+
+  for (let i = 1; i <= 3; i++) {
+    if (pumpModes[i] === "auto") {
+      const { startTime, endTime, tempThreshold } = globalConfig;
+      const shouldOn = startTime <= nowTime && nowTime <= endTime && temp > tempThreshold;
+
+      const sw = document.getElementById(`pump0${i}Switch`);
+      const isCurrentlyOn = sw?.checked;
+
+      // เรียกใช้ togglePump เฉพาะตอนเปลี่ยนสถานะ
+      if (shouldOn && !isCurrentlyOn) {
+        sw.checked = true;
+        togglePump(i);
+      } else if (!shouldOn && isCurrentlyOn) {
+        sw.checked = false;
+        togglePump(i);
+      }
+    }
+  }
+}
+
+
+function togglePump(pump) {
+  //แสดงเวลาเริ่มทำงาน
+  const now = new Date();
+  const { time: timeStr } = getDateTime(now);
+  const sw = document.getElementById(`pump0${pump}Switch`);
+  if (!sw) return;
+
+  const status = sw.checked ? "ON" : "OFF";
+  
+  const startEl = document.getElementById(`pump0${pump}Start`);
+  const humidityEl = document.getElementById(`pump0${pump}Humidity`);
+
+  if (status === "ON") {
+    db.ref(`pump_0${pump}/status`).set(status);
+    db.ref(`pump_0${pump}/strTime`).set(timeStr);
+    console.log(`ทำการบันทึกเวลาเรียบร้อยแล้ว`);
+    if (startEl) startEl.textContent = timeStr;
+    if (humidityEl) humidityEl.textContent = Math.floor(Math.random() * 30 + 30) + "°C";
+  } else if (status === "OFF"){
+    db.ref(`pump_0${pump}/status`).set(status);
+    if (startEl) startEl.textContent = "--:--";
+    if (humidityEl) humidityEl.textContent = "--°C";
+  }
+}
+
+
+function toggleMode(pumpId) {
+  const isAuto = document.getElementById(`modeToggle${pumpId}`).checked;
+  const mode = isAuto ? "auto" : "manual";
+
+  db.ref(`pump_0${pumpId}/mode`).set(mode)
+    .then(() => {
+      console.log(`✅ อัปเดต mode: pump_0${pumpId} = ${mode}`);
+
+      if (mode === "manual") {
+        db.ref(`pump_0${pumpId}/status`).once("value")
+          .then((snapshot) => {
+            const currentStatus = snapshot.val();
+            if (currentStatus === "ON") {
+              db.ref(`pump_0${pumpId}/status`).set("OFF");
+              const sw = document.getElementById(`pump0${pumpId}Switch`);
+              const statusText = document.getElementById(`pump0${pumpId}Status`);
+              const startEl = document.getElementById(`pump0${pumpId}Start`);
+              const humEl = document.getElementById(`pump0${pumpId}Humidity`);
+              if (sw) sw.checked = false;
+              if (statusText) statusText.textContent = "ปิด";
+              if (startEl) startEl.textContent = "--:--";
+              if (humEl) humEl.textContent = "--°C";
+            }
+          });
+      }
+    })
+    .catch((err) => console.error("❌ ล้มเหลว:", err));
 }
 
 function renderPumpSetting(pumpId) {
@@ -145,36 +153,6 @@ function renderPumpSetting(pumpId) {
       </div>
     </div>
   `;
-}
-
-function toggleMode(pumpId) {
-  const isAuto = document.getElementById(`modeToggle${pumpId}`).checked;
-  const mode = isAuto ? "auto" : "manual";
-
-  db.ref(`pump_0${pumpId}/mode`)
-    .set(mode)
-    .then(() => {
-      console.log(`✅ อัปเดต mode: pump_0${pumpId} = ${mode}`);
-
-      if (mode === "manual") {
-        db.ref(`pump_0${pumpId}/status`)
-          .once("value")
-          .then((snapshot) => {
-            const currentStatus = snapshot.val();
-            if (currentStatus === "ON") {
-              db.ref(`pump_0${pumpId}/status`).set("OFF");
-              document.getElementById(`pump0${pumpId}Switch`).checked = false;
-              document.getElementById(`pump0${pumpId}Status`).textContent =
-                "ปิด";
-              document.getElementById(`pump0${pumpId}Start`).textContent =
-                "--:--";
-              document.getElementById(`pump0${pumpId}Humidity`).textContent =
-                "--°C";
-            }
-          });
-      }
-    })
-    .catch((err) => console.error("❌ ล้มเหลว:", err));
 }
 
 function saveGlobalConfig() {
@@ -207,7 +185,7 @@ function loadSettings() {
     const toggle = document.getElementById(`modeToggle${pumpId}`);
     const label = document.getElementById(`modeLabel${pumpId}`);
 
-    if (!toggle || !label) return; // ถ้าไม่เจอ element ก็ข้ามเลย
+    if (!toggle || !label) return;
 
     db.ref(`pump_0${pumpId}/mode`).on("value", (snapshot) => {
       const mode = snapshot.val() || "manual";
@@ -238,14 +216,63 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+function getDateTime(date) {
+  const days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+  const months = [
+    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+  ];
+
+  const d = date.getDate();
+  const m = date.getMonth();
+  const y = date.getFullYear() + 543;
+  const h = date.getHours().toString().padStart(2, "0");
+  const min = date.getMinutes().toString().padStart(2, "0");
+  const dayName = days[date.getDay()];
+  const monthName = months[m];
+
+  return {
+    thaiDateTime: `วัน${dayName}ที่ ${d} ${monthName} พ.ศ. ${y} เวลา ${h}:${min} น.`,
+    date: `${d}/${m}/${y}`,
+    time: `${h}:${min}`
+  };
+}
+
+function timeUpdate() {
+    const updateEl = document.getElementById("lastUpdate");
+    const now = new Date();
+    const { thaiDateTime } = getDateTime(now);
+    if (updateEl) updateEl.textContent = thaiDateTime;
+}
+
+async function loadWeather() {
+  const res = await fetch("https://api.openweathermap.org/data/2.5/weather?lat=13.7563&lon=100.5018&units=metric&lang=th&appid=3fe26da4919fb8c89e790fab6d6ab83f");
+  const data = await res.json();
+
+  const temp = data.main.temp.toFixed(1);
+  const humidity = data.main.humidity;
+  const light = data.weather[0].description;
+
+  const tempEl = document.getElementById("temp");
+  if (tempEl) tempEl.textContent = `🌡️ ${temp}°C`;
+
+  const humidityEl = document.getElementById("humidity");
+  if (humidityEl) humidityEl.textContent = `💧 ${humidity}%`;
+
+  const lightEl = document.getElementById("light");
+  if (lightEl) lightEl.textContent = `🌤️ ${light}`;
+
+  return { temp: parseFloat(temp), humidity, light };
+}
+
 window.onload = async () => {
   await loadWeather();
   await loadDataFromFirebase();
-
   if (document.getElementById("settingsArea")) {
     loadSettings();
   }
-
+  timeUpdate();
+  setInterval(timeUpdate, 3000);
   autoControl();
   setInterval(autoControl, 3000);
 };
