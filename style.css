@@ -27,6 +27,7 @@ body {
   background-color: aliceblue;
   border-radius: 25px 25px 0 0;
   font-weight: normal;
+  padding-bottom: 60px;
 }
 
 .mainPage {
@@ -40,9 +41,9 @@ body {
 }
 
 .text-Time {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: normal;
-  color: #6d6d6d;
+  color: #999595;
 }
 
 .text-label {
@@ -173,12 +174,8 @@ footer {
   background-color: #0a1a64;
   display: flex;
   justify-content: space-around;
-  padding: 10px 0;
-  color: white;
-  font-size: 12px;
-}
-
-footer div {
+  padding: 5px;
+  font-size: 13px;
   text-align: center;
 }
 
@@ -190,7 +187,7 @@ h2 {
 .pump-setting,
 .global-setting {
   background: #fff;
-  padding: 15px;
+  padding: 8px;
   border-radius: 15px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   margin-bottom: 5px;
@@ -204,14 +201,14 @@ h2 {
 
 .setting-header .label {
   font-weight: bold;
-  font-size: 16px;
+  font-size: 13px;
   color: #333;
 }
 
 .mode-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 10px;
   margin-top: 5px;
   color: #333;
 }
@@ -232,4 +229,5 @@ input[type="number"] {
 
 a {
   text-decoration: none;
+  color: #fff;
 }
