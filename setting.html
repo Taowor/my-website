@@ -1,45 +1,49 @@
 <!DOCTYPE html>
 <html lang="th">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ตั้งค่าปั๊ม</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ตั้งค่าปั๊ม</title>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="style.css" />
-</head>
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
 
-<body>
-  <h2>ตั้งค่าโหมดปั๊มน้ำ</h2>
+  <body>
+    <span class="text-Title">🛠️ ตั้งค่าโหมดปั๊มน้ำ</span>
+    <div id="settingsArea"></div>
+    <div class="global-setting">
+      <span class="text-Title">🛠️ ตั้งค่าช่วงเวลาและอุณหภูมิ (ใช้ร่วมกัน)</span>
+      <label>เริ่มเวลา</label>
+      <input type="time" id="startTime" onchange="saveGlobalConfig()" />
+      <label>สิ้นสุดเวลา</label>
+      <input type="time" id="endTime" onchange="saveGlobalConfig()" />
+      <label>อุณหภูมิเกณฑ์ (°C)</label>
+      <input
+        type="number"
+        id="tempThreshold"
+        min="0"
+        max="100"
+        onchange="saveGlobalConfig()"
+      />
+    </div>
 
-  <div id="settingsArea"></div>
+    <!-- Firebase SDK ก่อน -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
-  <div class="global-setting">
-    <h3>🛠️ ตั้งค่าช่วงเวลาและอุณหภูมิ (ใช้ร่วมกัน)</h3>
-    <label>เริ่มเวลา</label>
-    <input type="time" id="startTime" onchange="saveGlobalConfig()" />
-    <label>สิ้นสุดเวลา</label>
-    <input type="time" id="endTime" onchange="saveGlobalConfig()" />
-    <label>อุณหภูมิเกณฑ์ (°C)</label>
-    <input type="number" id="tempThreshold" min="0" max="100" onchange="saveGlobalConfig()" />
-  </div>
+    <!-- script.js ต่อท้าย -->
+    <script src="script.js"></script>
 
-<!-- Firebase SDK ก่อน -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-
-<!-- script.js ต่อท้าย -->
-<script src="script.js"></script>
-
-<!-- เรียก loadSettings เมื่อ DOM โหลด -->
-<script>
-  window.addEventListener("DOMContentLoaded", () => {
-    if (typeof loadSettings === "function") {
-      loadSettings();
-    } else {
-      console.error("⛔ ไม่พบฟังก์ชัน loadSettings()");
-    }
-  });
-</script>
-</body>
+    <!-- เรียก loadSettings เมื่อ DOM โหลด -->
+    <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        if (typeof loadSettings === "function") {
+          loadSettings();
+        } else {
+          console.error("⛔ ไม่พบฟังก์ชัน loadSettings()");
+        }
+      });
+    </script>
+  </body>
 </html>
