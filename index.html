@@ -1,367 +1,173 @@
 <!DOCTYPE html>
 <html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>โปรไฟล์ผู้ใช้</title>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>โปรไฟล์ผู้ใช้</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="script.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <body>
+    <div class="header">
+      <div class="text">Tuawor Smart Farm</div>
+      <div class="text-Time" id="lastUpdate"></div>
+    </div>
 
-
-  <style>
-    @import url("https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap");
-
-    body {
-      background-color: #0a1a64;
-      margin: 0;
-      font-family: "Prompt", sans-serif;
-    }
-
-    .header {
-      padding: 15px;
-      color: #ffffff;
-    }
-
-    .header .text {
-      font-weight: bold;
-      font-size: 20px;
-    }
-
-    .container {
-      display: grid;
-      padding: 10px;
-      background-color: aliceblue;
-      border-radius: 25px 25px 0 0;
-      font-weight: normal;
-    }
-
-    .environment {
-      display: grid;
-    }
-
-    .text-Title {
-      font-size: 16px;
-      color: #454545;
-      padding-left: 10px;
-    }
-
-    .text-Time {
-      font-size: 10px;
-      font-weight: normal;
-      color: #6d6d6d;
-    }
-
-    .text-label {
-      color: #dedede;
-      font-size: 10px;
-    }
-
-    .text-value {
-      font-size: 14px;
-    }
-
-    .card-mainEnvi {
-      display: flex;
-      background-image: url("Background.png");
-      background-color: #ffffff;
-      border-radius: 15px;
-      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
-      padding: 20px;
-      margin-bottom: 10px;
-      /* text-align: center; */
-    }
-
-    .card-mainEnvi .column {
-      flex: 1;
-      padding: 0 10px;
-    }
-
-    .card-control {
-      display: flex;
-      background: #0a1a64;
-      border-radius: 15px;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-      padding: 20px;
-      margin-bottom: 10px;
-    }
-
-    .card-detail {
-      display: flex;
-      background: #ffffff;
-      border-radius: 15px;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-      padding: 20px;
-      margin-bottom: 10px;
-    }
-
-    /* Toggle switch style */
-    .pump-group {
-      display: flex;
-      gap: 15px;
-      justify-content: space-between;
-      /* หรือ center */
-      flex-wrap: nowrap;
-    }
-
-    .pump-card {
-      width: 30%;
-      /* หรือใช้ค่าคงที่เช่น 250px */
-      background: white;
-      padding: 10px;
-      border-radius: 15px;
-      font-family: "Prompt", sans-serif;
-      color: #2e2e2e;
-      box-shadow: 0 2px 6px rgba(255, 255, 255, 0.15);
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .pump-label {
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 40px;
-      height: 22px;
-    }
-
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #888;
-      border-radius: 28px;
-      transition: 0.4s;
-    }
-
-    .slider::before {
-      position: absolute;
-      content: "";
-      height: 15px;
-      width: 15px;
-      left: 2px;
-      bottom: 3.5px;
-      background-color: white;
-      border-radius: 50%;
-      transition: 0.4s;
-    }
-
-    input:checked+.slider {
-      background-color: #3b0ea3;
-    }
-
-    input:checked+.slider::before {
-      transform: translateX(21px);
-    }
-
-    .card-info {
-      margin-top: 8px;
-      font-size: 10px;
-      color: #333;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="header">
-    <div class="text">Tuawor Smart Farm</div>
-    <div class="text-Time" id="lastUpdate"></div>
-  </div>
-  <div class="container">
-    <div class="environment">
-      <div class="text-Title">ภาพรวมระบบ</div>
-      <div class="card-mainEnvi">
-        <div class="column">
+    <div class="container">
+      <div id="homePage">
+        <div class="text-Title">ภาพรวมระบบ</div>
+        <div class="card-mainEnvi">
+          <div class="column">
+            <div class="column">
+              <div>
+                <div class="text-label">อุณหภูมิ</div>
+                <div class="text-value" id="temp">--</div>
+              </div>
+              <div>
+                <div class="text-label">ความชื้น</div>
+                <div class="text-value" id="humidity">--</div>
+              </div>
+              <div>
+                <div class="text-label">แสงแดด</div>
+                <div class="text-value" id="light">--</div>
+              </div>
+            </div>
+          </div>
           <div class="column">
             <div>
-              <div class="text-label">อุณหภูมิ</div>
-              <div class="text-value" id="temp">--</div>
+              <div class="text-label">ปั้ม 01</div>
+              <div class="text-value" id="pump1">--</div>
             </div>
             <div>
-              <div class="text-label">ความชื้น</div>
-              <div class="text-value" id="humidity">--</div>
+              <div class="text-label">ปั้ม 02</div>
+              <div class="text-value" id="pump2">--</div>
             </div>
             <div>
-              <div class="text-label">แสงแดด</div>
-              <div class="text-value" id="light">--</div>
+              <div class="text-label">ปั้ม 03</div>
+              <div class="text-value" id="pump3">--</div>
             </div>
           </div>
         </div>
-        <div class="column">
-          <div>
-            <div class="text-label">ปั้ม 01</div>
-            <div class="text-value" id="pump1">--</div>
-          </div>
-          <div>
-            <div class="text-label">ปั้ม 02</div>
-            <div class="text-value" id="pump2">--</div>
-          </div>
-          <div>
-            <div class="text-label">ปั้ม 03</div>
-            <div class="text-value" id="pump3">--</div>
-          </div>
-        </div>
-      </div>
 
-      <div class="text-Title">การควบคุม</div>
-      <div class="card-control">
-        <div class="pump-group">
-
-          <!-- ปั๊ม 01 -->
-          <div class="pump-card">
-            <div class="card-header">
-              <span class="pump-label">ปั้ม <strong>01</strong></span>
-              <label class="switch">
-                <input type="checkbox" id="pump01Switch" onchange="togglePump(1)" />
-                <span class="slider"></span>
-              </label>
-            </div>
-            <div class="card-info">
-              <div>สถานะ : <span id="pump01Status">--</span></div>
-              <div>
-                เริ่ม : <span id="pump01Start">--:--</span> ค่าความชื้น :
-                <span id="pump01Humidity">--°C</span>
+        <div class="text-Title">การควบคุม</div>
+        <div class="card-control">
+          <div class="pump-group">
+            <div class="pump-card">
+              <div class="card-header">
+                <span class="pump-label">ปั้ม <strong>01</strong></span>
+                <label class="toggleSwitch"
+                  ><input
+                    type="checkbox"
+                    id="pump01Switch"
+                    onchange="togglePump(1)" /><span class="slider"></span
+                ></label>
+              </div>
+              <div class="card-info">
+                <div>สถานะ : <span id="pump01Status">--</span></div>
+                <div>
+                  เริ่ม : <span id="pump01Start">--:--</span> ค่าความชื้น :
+                  <span id="pump01Humidity">--°C</span>
+                </div>
               </div>
             </div>
-          </div>
-
-          <!-- ปั๊ม 02 -->
-          <div class="pump-card">
-            <div class="card-header">
-              <span class="pump-label">ปั้ม <strong>02</strong></span>
-              <label class="switch">
-                <input type="checkbox" id="pump02Switch" onchange="togglePump(2)" />
-                <span class="slider"></span>
-              </label>
-            </div>
-            <div class="card-info">
-              <div>สถานะ : <span id="pump02Status">--</span></div>
-              <div>
-                เริ่ม : <span id="pump02Start">--:--</span> ค่าความชื้น :
-                <span id="pump02Humidity">--°C</span>
+            <div class="pump-card">
+              <div class="card-header">
+                <span class="pump-label">ปั้ม <strong>02</strong></span>
+                <label class="toggleSwitch"
+                  ><input
+                    type="checkbox"
+                    id="pump02Switch"
+                    onchange="togglePump(2)" /><span class="slider"></span
+                ></label>
+              </div>
+              <div class="card-info">
+                <div>สถานะ : <span id="pump02Status">--</span></div>
+                <div>
+                  เริ่ม : <span id="pump02Start">--:--</span> ค่าความชื้น :
+                  <span id="pump02Humidity">--°C</span>
+                </div>
               </div>
             </div>
-          </div>
-
-          <!-- ปั๊ม 03 -->
-          <div class="pump-card">
-            <div class="card-header">
-              <span class="pump-label">ปั้ม <strong>03</strong></span>
-              <label class="switch">
-                <input type="checkbox" id="pump03Switch" onchange="togglePump(3)" />
-                <span class="slider"></span>
-              </label>
-            </div>
-            <div class="card-info">
-              <div>สถานะ : <span id="pump03Status">--</span></div>
-              <div>
-                เริ่ม : <span id="pump03Start">--:--</span> ค่าความชื้น :
-                <span id="pump03Humidity">--°C</span>
+            <div class="pump-card">
+              <div class="card-header">
+                <span class="pump-label">ปั้ม <strong>03</strong></span>
+                <label class="toggleSwitch"
+                  ><input
+                    type="checkbox"
+                    id="pump03Switch"
+                    onchange="togglePump(3)" /><span class="slider"></span
+                ></label>
+              </div>
+              <div class="card-info">
+                <div>สถานะ : <span id="pump03Status">--</span></div>
+                <div>
+                  เริ่ม : <span id="pump03Start">--:--</span> ค่าความชื้น :
+                  <span id="pump03Humidity">--°C</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        <div class="text-Title">รายละเอียด</div>
+        <div class="card-detail"><p></p></div>
       </div>
 
-      <div class="text-Title">รายละเอียด</div>
-      <div class="card-detail">
-        <p></p>
-      </div>
+      <div id="settingPage" style="display: none"></div>
     </div>
-  </div>
-</body>
 
-<script>
-  // 👇 Firebase config (เปลี่ยนเป็นของคุณถ้ายังไม่ใส่)
-  const firebaseConfig = {
-    apiKey: "AIzaSyCorsisrGvyszMUQ6NpN5d_5XMa-j9Msj0",
-    authDomain: "tuaworsmartfarm.firebaseapp.com",
-    databaseURL: "https://tuaworsmartfarm-default-rtdb.firebaseio.com",
-    projectId: "tuaworsmartfarm",
-    storageBucket: "tuaworsmartfarm.appspot.com",
-    messagingSenderId: "605653634791",
-    appId: "1:605653634791:web:ec3f48c97a919a36795972",
-    measurementId: "G-BCPSSE04C6"
-  };
+    <footer>
+      <div>
+        <a href="#" onclick="loadSettingPage('home')">🏠<br />หน้าหลัก</a>
+      </div>
+      <div>
+        <a href="#">🌿<br />แปลงปลูก</a>
+      </div>
+      <div>
+        <a href="#" onclick="loadSettingPage('setting')">⚙️<br />ตั้งค่า</a>
+      </div>
+    </footer>
 
-  // 🔥 Init Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+    <script>
+      function loadSettingPage(page) {
+        const home = document.getElementById("homePage");
+        const setting = document.getElementById("settingPage");
 
-  function getThaiDateTime(date) {
-    const days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
-    const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-    const day = days[date.getDay()];
-    const d = date.getDate();
-    const m = months[date.getMonth()];
-    const y = date.getFullYear() + 543;
-    const h = date.getHours().toString().padStart(2, "0");
-    const min = date.getMinutes().toString().padStart(2, "0");
-    return `วัน${day} ที่ ${d} ${m} พ.ศ. ${y} เวลา ${h}:${min} น.`;
-  }
+        if (page === "home") {
+          home.style.display = "block";
+          setting.style.display = "none";
+        } else if (page === "setting") {
+          home.style.display = "none";
+          setting.style.display = "block";
+        }
 
-  function loadDataFromFirebase() {
-    // อ่าน sensor
-    db.ref("sensor").on("value", (snap) => {
-      const data = snap.val();
-      document.getElementById("temp").textContent = `🌡️ ${data.temp}°C`;
-      document.getElementById("humidity").textContent = `💧 ${data.humidity}%`;
-      document.getElementById("light").textContent = `🌞 ดิน ${data.soil}%`;
-    });
+        // โหลดเฉพาะครั้งแรกเท่านั้น
+        if (!document.getElementById("settingPage").innerHTML.trim()) {
+          fetch("setting.html")
+            .then((res) => res.text())
+            .then((html) => {
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, "text/html");
+              document.getElementById("settingPage").innerHTML =
+                doc.body.innerHTML;
 
-    // อ่านสถานะปั๊มทั้ง 3 ตัว
-    for (let i = 1; i <= 3; i++) {
-      const pumpRef = db.ref(`pump_0${i}`);
-      pumpRef.on("value", (snap) => {
-        const val = snap.val();
-        const statusText = val.status === "ON" ? "⛈️ เปิด" : "✊ ปิด";
-        document.getElementById(`pump${i}`).textContent = statusText;
-        document.getElementById(`pump0${i}Switch`).checked = val.status === "ON";
-        document.getElementById(`pump0${i}Status`).textContent = val.status === "ON" ? "เปิด" : "ปิด";
-      });
-    }
-
-    document.getElementById("lastUpdate").textContent = getThaiDateTime(new Date());
-  }
-
-  function togglePump(pumpNumber) {
-    const isChecked = document.getElementById(`pump0${pumpNumber}Switch`).checked;
-    const status = isChecked ? "ON" : "OFF";
-
-    db.ref(`pump_0${pumpNumber}/status`).set(status);
-
-    // แสดงข้อมูลในหน้าเว็บทันที
-    const now = new Date();
-    const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
-    document.getElementById(`pump0${pumpNumber}Status`).textContent = isChecked ? "เปิด" : "ปิด";
-    document.getElementById(`pump0${pumpNumber}Start`).textContent = isChecked ? time : "--:--";
-    document.getElementById(`pump0${pumpNumber}Humidity`).textContent = isChecked ? (Math.floor(Math.random() * 50 + 30) + "°C") : "--°C";
-  }
-
-  window.onload = () => {
-    loadDataFromFirebase();
-    loadWeather(); // ฟังก์ชันนี้ใช้ API OpenWeather ได้เหมือนเดิม
-  };
-</script>
-
-
+              // ✅ หลัง DOM แสดงแล้วจึงเรียก loadSettings
+              if (typeof loadSettings === "function") {
+                loadSettings();
+              } else {
+                console.warn("⚠️ ไม่พบฟังก์ชัน loadSettings()");
+              }
+            })
+            .catch((err) => {
+              console.error("⚠️ ไม่สามารถโหลด setting.html", err);
+            });
+        }
+      }
+    </script>
+  </body>
 </html>
