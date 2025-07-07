@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>โปรไฟล์ผู้ใช้</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="script.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <div class="header">
+      <div class="text">Tuawor Smart Farm</div>
+      <div class="text-Time" id="lastUpdate"></div>
+    </div>
+
+    <div class="container">
+      <div id="homePage">
+        <div class="text-Title">ภาพรวมระบบ</div>
+        <div class="card-mainEnvi">
+          <div class="column">
+            <div class="column">
+              <div>
+                <div class="text-label">อุณหภูมิ</div>
+                <div class="text-value" id="temp">--</div>
+              </div>
+              <div>
+                <div class="text-label">ความชื้น</div>
+                <div class="text-value" id="humidity">--</div>
+              </div>
+              <div>
+                <div class="text-label">แสงแดด</div>
+                <div class="text-value" id="light">--</div>
+              </div>
+            </div>
+          </div>
+          <div class="column">
+            <div>
+              <div class="text-label">ปั้ม 01</div>
+              <div class="text-value" id="pump1">--</div>
+            </div>
+            <div>
+              <div class="text-label">ปั้ม 02</div>
+              <div class="text-value" id="pump2">--</div>
+            </div>
+            <div>
+              <div class="text-label">ปั้ม 03</div>
+              <div class="text-value" id="pump3">--</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-Title">การควบคุม</div>
+        <div class="card-control">
+          <div class="pump-group">
+            <div class="pump-card">
+              <div class="card-header">
+                <span class="pump-label">ปั้ม <strong>01</strong></span>
+                <label class="toggleSwitch">
+                  <input type="checkbox" id="pump01Switch" onchange="togglePump(1)"/>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="card-info">
+                <div>Mode : <span id="pump01Mode">--</span></div>
+                <div>
+                  เริ่ม : <span id="pump01Start">--:--</span> ค่าความชื้น :
+                  <span id="pump01Humidity">--°C</span>
+                </div>
+              </div>
+            </div>
+            <div class="pump-card">
+              <div class="card-header">
+                <span class="pump-label">ปั้ม <strong>02</strong></span>
+                <label class="toggleSwitch">
+                  <input type="checkbox" id="pump02Switch" onchange="togglePump(2)"/>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="card-info">
+                <div>Mode : <span id="pump02Mode">--</span></div>
+                <div>
+                  เริ่ม : <span id="pump02Start">--:--</span> ค่าความชื้น :
+                  <span id="pump02Humidity">--°C</span>
+                </div>
+              </div>
+            </div>
+            <div class="pump-card">
+              <div class="card-header">
+                <span class="pump-label">ปั้ม <strong>03</strong></span>
+                <label class="toggleSwitch">
+                  <label class="toggleSwitch">
+                  <input type="checkbox" id="pump03Switch" onchange="togglePump(3)"/>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="card-info">
+                <div>Mode : <span id="pump03Mode">--</span></div>
+                <div>
+                  เริ่ม : <span id="pump03Start">--:--</span> ค่าความชื้น :
+                  <span id="pump03Humidity">--°C</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-Title">รายละเอียด</div>
+        <div class="card-detail"><p></p></div>
+      </div>
+
+      <div id="settingPage" style="display: none"></div>
+    </div>
+
+    <footer>
+      <div>
+        <a href="#" onclick="loadSettingPage('home')">🏠<br />หน้าหลัก</a>
+      </div>
+      <div>
+        <a href="#">🌿<br />แปลงปลูก</a>
+      </div>
+      <div>
+        <a href="#" onclick="loadSettingPage('setting')">⚙️<br />ตั้งค่า</a>
+      </div>
+    </footer>
+
+    <script>
+      function loadSettingPage(page) {
+        const home = document.getElementById("homePage");
+        const setting = document.getElementById("settingPage");
+
+        if (page === "home") {
+          home.style.display = "block";
+          setting.style.display = "none";
+        } else if (page === "setting") {
+          home.style.display = "none";
+          setting.style.display = "block";
+        }
+
+        // โหลดเฉพาะครั้งแรกเท่านั้น
+        if (!document.getElementById("settingPage").innerHTML.trim()) {
+          fetch("setting.html")
+            .then((res) => res.text())
+            .then((html) => {
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, "text/html");
+              document.getElementById("settingPage").innerHTML =
+                doc.body.innerHTML;
+
+              // ✅ หลัง DOM แสดงแล้วจึงเรียก loadSettings
+              if (typeof loadSettings === "function") {
+                loadSettings();
+              } else {
+                console.warn("⚠️ ไม่พบฟังก์ชัน loadSettings()");
+              }
+            })
+            .catch((err) => {
+              console.error("⚠️ ไม่สามารถโหลด setting.html", err);
+            });
+        }
+      }
+    </script>
+  </body>
+</html>
