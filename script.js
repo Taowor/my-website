@@ -1,3 +1,4 @@
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCorsisrGvyszMUQ6NpN5d_5XMa-j9Msj0",
   authDomain: "tuaworsmartfarm.firebaseapp.com",
@@ -24,7 +25,7 @@ function loadDataFromFirebase() {
       if (loaded === totalToLoad) resolve();
     }
 
-    db.ref("globalConfig").on("value", (snap) => {
+    db.ref("globalConfig").once("value", (snap) => {
       globalConfig = snap.val();
       checkLoaded();
     });
@@ -53,60 +54,84 @@ function loadDataFromFirebase() {
   });
 }
 
-function autoControl() {
-  if (!globalConfig || Object.keys(pumpModes).length < 3) return;
-
-  const now = new Date();
-  const { time: nowTime } = getDateTime(now); // ดึงเวลา HH:mm
-  const tempText = (document.getElementById("temp") || {}).textContent || "";
-  const temp = parseFloat((tempText.match(/([\d.]+)/) || [])[0] || 0);
-
-  for (let i = 1; i <= 3; i++) {
-    if (pumpModes[i] === "auto") {
-      const { startTime, endTime, tempThreshold } = globalConfig;
-      const shouldOn = startTime <= nowTime && nowTime <= endTime && temp > tempThreshold;
-
-      const sw = document.getElementById(`pump0${i}Switch`);
-      const isCurrentlyOn = sw?.checked;
-
-      // เรียกใช้ togglePump เฉพาะตอนเปลี่ยนสถานะ
-      if (shouldOn && !isCurrentlyOn) {
-        sw.checked = true;
-        togglePump(i);
-      } else if (!shouldOn && isCurrentlyOn) {
-        sw.checked = false;
-        togglePump(i);
-      }
-    }
-  }
-}
-
-
 function togglePump(pump) {
-  //แสดงเวลาเริ่มทำงาน
   const now = new Date();
   const { time: timeStr } = getDateTime(now);
   const sw = document.getElementById(`pump0${pump}Switch`);
   if (!sw) return;
 
   const status = sw.checked ? "ON" : "OFF";
-  
-  const startEl = document.getElementById(`pump0${pump}Start`);
-  const humidityEl = document.getElementById(`pump0${pump}Humidity`);
 
-  if (status === "ON") {
+  db.ref(`pump_0${pump}/status`).once("value").then((snap) => {
+    const prevStatus = snap.val();
+    if (status === prevStatus) return;
+
     db.ref(`pump_0${pump}/status`).set(status);
-    db.ref(`pump_0${pump}/strTime`).set(timeStr);
-    console.log(`ทำการบันทึกเวลาเรียบร้อยแล้ว`);
-    if (startEl) startEl.textContent = timeStr;
-    if (humidityEl) humidityEl.textContent = Math.floor(Math.random() * 30 + 30) + "°C";
-  } else if (status === "OFF"){
-    db.ref(`pump_0${pump}/status`).set(status);
-    if (startEl) startEl.textContent = "--:--";
-    if (humidityEl) humidityEl.textContent = "--°C";
-  }
+
+    const startEl = document.getElementById(`pump0${pump}Start`);
+    const humidityEl = document.getElementById(`pump0${pump}Humidity`);
+
+    if (status === "ON") {
+      db.ref(`pump_0${pump}/strTime`).set(timeStr);
+      if (startEl) startEl.textContent = timeStr;
+      if (humidityEl) humidityEl.textContent = Math.floor(Math.random() * 30 + 30) + "°C";
+    } else {
+      if (startEl) startEl.textContent = "--:--";
+      if (humidityEl) humidityEl.textContent = "--°C";
+    }
+  });
 }
 
+function autoControl() {
+  if (!globalConfig || Object.keys(pumpModes).length < 3) return;
+
+  const now = new Date();
+  const { time: nowTime } = getDateTime(now);
+  const tempText = (document.getElementById("temp") || {}).textContent || "";
+  const temp = parseFloat((tempText.match(/([\d.]+)/) || [])[0] || 0);
+
+  let slots = globalConfig.timeSlots;
+  if (!slots || !Array.isArray(slots) || !slots.length || !slots[0].start || !slots[0].end) {
+    // slot ยังไม่ถูกเซ็ต/ว่าง ไม่ต้องสั่งปั้มอะไร
+    return;
+  }
+
+  function isInAnyTimeSlot(time) {
+    return slots.some(({ start, end }) => {
+      if (!start || !end) return false;
+      if (start <= end) {
+        return start <= time && time <= end;
+      } else {
+        return (start <= time && time <= "23:59") || ("00:00" <= time && time <= end);
+      }
+    });
+  }
+
+  console.log("slots", JSON.stringify(slots), "nowTime", nowTime);
+  for (let i = 1; i <= 3; i++) {
+    if (pumpModes[i] === "auto") {
+      const shouldOn = isInAnyTimeSlot(nowTime) && temp > globalConfig.tempThreshold;
+
+      db.ref(`pump_0${i}/status`).once("value").then((snap) => {
+        const prevStatus = snap.val(); // "ON" หรือ "OFF"
+        const wantStatus = shouldOn ? "ON" : "OFF";
+
+        console.log(
+          `Pump${i} | Time: ${nowTime} | Temp: ${temp} | InSlot: ${isInAnyTimeSlot(nowTime)} | shouldOn: ${shouldOn} | prevStatus(Firebase): ${prevStatus} | wantStatus: ${wantStatus}`
+        );
+
+        if (prevStatus !== wantStatus) {
+          db.ref(`pump_0${i}/status`).set(wantStatus);
+          // อัปเดต UI
+          const sw = document.getElementById(`pump0${i}Switch`);
+          if (sw) sw.checked = shouldOn;
+          togglePump(i);
+          console.log(`>> เปลี่ยนสถานะ Pump${i} เป็น: ${wantStatus}`);
+        }
+      });
+    }
+  }
+}
 
 function toggleMode(pumpId) {
   const isAuto = document.getElementById(`modeToggle${pumpId}`).checked;
@@ -156,21 +181,23 @@ function renderPumpSetting(pumpId) {
 }
 
 function saveGlobalConfig() {
-  const startTimeEl = document.getElementById("startTime");
-  const endTimeEl = document.getElementById("endTime");
   const tempEl = document.getElementById("tempThreshold");
-
-  const startTime = startTimeEl ? startTimeEl.value : "";
-  const endTime = endTimeEl ? endTimeEl.value : "";
   const tempThreshold = tempEl ? parseInt(tempEl.value) : 0;
 
-  const config = { startTime, endTime, tempThreshold };
+  const timeSlots = [];
+  const rows = document.querySelectorAll("#timeSlotsContainer .time-row");
+  rows.forEach(row => {
+    const start = row.querySelector(".startTime")?.value || "";
+    const end = row.querySelector(".endTime")?.value || "";
+    if (start && end) timeSlots.push({ start, end });
+  });
 
   db.ref("globalConfig")
-    .set(config)
-    .then(() => console.log("✅ บันทึก globalConfig แล้ว"))
-    .catch((err) => console.error("❌ ล้มเหลว:", err));
+    .set({ tempThreshold, timeSlots })
+    .then(() => console.log("✅ บันทึก timeSlots สำเร็จ"))
+    .catch(err => console.error("❌ บันทึกไม่สำเร็จ:", err));
 }
+
 
 function loadSettings() {
   const area = document.getElementById("settingsArea");
@@ -198,18 +225,27 @@ function loadSettings() {
     });
   });
 
-  db.ref("globalConfig")
-    .once("value")
-    .then((snapshot) => {
-      const cfg = snapshot.val() || {};
-      const startEl = document.getElementById("startTime");
-      const endEl = document.getElementById("endTime");
-      const tempEl = document.getElementById("tempThreshold");
+  db.ref("globalConfig").once("value").then((snapshot) => {
+    const cfg = snapshot.val() || {};
+    const startEl = document.getElementById("startTime");
+    const endEl = document.getElementById("endTime");
+    const tempEl = document.getElementById("tempThreshold");
 
-      if (startEl) startEl.value = cfg.startTime || "";
-      if (endEl) endEl.value = cfg.endTime || "";
-      if (tempEl) tempEl.value = cfg.tempThreshold || "";
+    if (startEl) startEl.value = cfg.startTime || "";
+    if (endEl) endEl.value = cfg.endTime || "";
+    if (tempEl) tempEl.value = cfg.tempThreshold || "";
+  });
+
+  db.ref("globalConfig").once("value").then(snapshot => {
+    const cfg = snapshot.val() || {};
+    document.getElementById("tempThreshold").value = cfg.tempThreshold || "";
+
+    const container = document.getElementById("timeSlotsContainer");
+    container.innerHTML = "";
+    (cfg.timeSlots || []).forEach(slot => {
+      addTimeSlot(slot.start, slot.end);
     });
+  });
 }
 
 function capitalize(str) {
@@ -239,10 +275,10 @@ function getDateTime(date) {
 }
 
 function timeUpdate() {
-    const updateEl = document.getElementById("lastUpdate");
-    const now = new Date();
-    const { thaiDateTime } = getDateTime(now);
-    if (updateEl) updateEl.textContent = thaiDateTime;
+  const updateEl = document.getElementById("lastUpdate");
+  const now = new Date();
+  const { thaiDateTime } = getDateTime(now);
+  if (updateEl) updateEl.textContent = thaiDateTime;
 }
 
 async function loadWeather() {
@@ -265,14 +301,43 @@ async function loadWeather() {
   return { temp: parseFloat(temp), humidity, light };
 }
 
+function addTimeSlot(start = "", end = "") {
+  const container = document.getElementById("timeSlotsContainer");
+
+  const slotDiv = document.createElement("div");
+  slotDiv.className = "time-row";
+
+  slotDiv.innerHTML = `
+    <label>เริ่มเวลา</label>
+    <input type="time" class="startTime" value="${start}" />
+    <label>สิ้นสุดเวลา</label>
+    <input type="time" class="endTime" value="${end}" />
+    <button class="remove-btn" onclick="removeTimeSlot(this)">ลบ</button>
+  `;
+
+  // บันทึกเมื่อมีการเปลี่ยนแปลงค่า
+  slotDiv.querySelectorAll("input").forEach(input => {
+    input.addEventListener("change", saveGlobalConfig);
+  });
+
+  container.appendChild(slotDiv);
+  saveGlobalConfig();
+}
+
+function removeTimeSlot(btn) {
+  const slotDiv = btn.parentElement;
+  slotDiv.remove();
+  saveGlobalConfig(); // บันทึกหลังลบ
+}
+
 window.onload = async () => {
-  await loadDataFromFirebase();
   await loadWeather();
+  await loadDataFromFirebase();
   if (document.getElementById("settingsArea")) {
     loadSettings();
   }
-  autoControl();
-  setInterval(autoControl, 3000);
+  autoControl(); // เรียกอีกทีหลังโหลดเสร็จ
+  setInterval(autoControl, 5000); // เรียกทีเดียว
   timeUpdate();
-  setInterval(timeUpdate, 3000);
+  setInterval(timeUpdate, 5000);
 };
