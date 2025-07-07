@@ -1,3 +1,4 @@
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyCorsisrGvyszMUQ6NpN5d_5XMa-j9Msj0",
   authDomain: "tuaworsmartfarm.firebaseapp.com",
@@ -13,10 +14,9 @@ const db = firebase.database();
 const pumpModes = {};
 let globalConfig = {};
 const pumps = [1, 2, 3];
-let autoControlLock = false; // ป้องกัน event ซ้อน
 
 function loadDataFromFirebase() {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const totalToLoad = 1 + pumps.length;
     let loaded = 0;
 
@@ -25,101 +25,36 @@ function loadDataFromFirebase() {
       if (loaded === totalToLoad) resolve();
     }
 
-    db.ref("globalConfig").once("value")
-      .then((snap) => {
-        globalConfig = snap.val();
-        checkLoaded();
-      }).catch(reject);
+    db.ref("globalConfig").once("value", (snap) => {
+      globalConfig = snap.val();
+      checkLoaded();
+    });
 
     for (let i of pumps) {
-      db.ref(`pump_0${i}`).once("value")
-        .then((snap) => {
-          const val = snap.val() || {};
-          pumpModes[i] = val.mode || "manual";
-          const statusEl = document.getElementById(`pump${i}`);
-          if (statusEl) statusEl.textContent = val.status === "ON" ? "⛈️ เปิด" : "✊ ปิด";
+      db.ref(`pump_0${i}`).on("value", (snap) => {
+        const val = snap.val() || {};
+        pumpModes[i] = val.mode || "manual";
 
-          const sw = document.getElementById(`pump0${i}Switch`);
-          const statusText = document.getElementById(`pump0${i}Status`);
-          const modeText = document.getElementById(`pump0${i}Mode`);
-          if (sw) {
-            sw.checked = val.status === "ON";
-            sw.disabled = pumpModes[i] === "auto";
-          }
-          if (statusText) statusText.textContent = val.status === "ON" ? "เปิด" : "ปิด";
-          if (modeText) modeText.textContent = pumpModes[i] === "auto" ? "Auto" : "Manual";
-          checkLoaded();
+        const statusEl = document.getElementById(`pump${i}`);
+        if (statusEl) statusEl.textContent = val.status === "ON" ? "⛈️ เปิด" : "✊ ปิด";
 
-          // ตั้งค่า real-time sync หลังโหลดข้อมูลเริ่มต้นเสร็จ
-          db.ref(`pump_0${i}`).on("value", (snap) => {
-            const val = snap.val() || {};
-            pumpModes[i] = val.mode || "manual";
-            const statusEl = document.getElementById(`pump${i}`);
-            if (statusEl) statusEl.textContent = val.status === "ON" ? "⛈️ เปิด" : "✊ ปิด";
+        const sw = document.getElementById(`pump0${i}Switch`);
+        const statusText = document.getElementById(`pump0${i}Status`);
+        const modeText = document.getElementById(`pump0${i}Mode`);
+        if (sw) {
+          sw.checked = val.status === "ON";
+          sw.disabled = pumpModes[i] === "auto";
+        }
+        if (statusText) statusText.textContent = val.status === "ON" ? "เปิด" : "ปิด";
+        if (modeText) modeText.textContent = pumpModes[i] === "auto" ? "Auto" : "Manual";
 
-            const sw = document.getElementById(`pump0${i}Switch`);
-            const statusText = document.getElementById(`pump0${i}Status`);
-            const modeText = document.getElementById(`pump0${i}Mode`);
-            if (sw) {
-              sw.checked = val.status === "ON";
-              sw.disabled = pumpModes[i] === "auto";
-            }
-            if (statusText) statusText.textContent = val.status === "ON" ? "เปิด" : "ปิด";
-            if (modeText) modeText.textContent = pumpModes[i] === "auto" ? "Auto" : "Manual";
-          });
-        }).catch(reject);
+        checkLoaded();
+      });
     }
   });
 }
 
-function autoControl() {
-  if (autoControlLock) return;
-  autoControlLock = true;
-  try {
-    if (!globalConfig || Object.keys(pumpModes).length < 3) {
-      autoControlLock = false;
-      return;
-    }
-    const now = new Date();
-    const { time: nowTime } = getDateTime(now); // ดึงเวลา HH:mm
-    const tempText = (document.getElementById("temp") || {}).textContent || "";
-    let temp = 0;
-    try {
-      temp = parseFloat((tempText.match(/([\d.]+)/) || [])[0] || 0);
-    } catch (err) {
-      temp = 0;
-    }
-
-    for (let i = 1; i <= 3; i++) {
-      if (pumpModes[i] === "auto") {
-        const { startTime, endTime, tempThreshold } = globalConfig;
-        const shouldOn = startTime <= nowTime && nowTime <= endTime && temp > parseFloat(tempThreshold || 0);
-
-        const sw = document.getElementById(`pump0${i}Switch`);
-        const isCurrentlyOn = sw?.checked;
-
-        // ป้องกัน event loop ซ้อน
-        if (sw) sw.onchange = null;
-
-        if (shouldOn && !isCurrentlyOn) {
-          sw.checked = true;
-          togglePump(i, true);
-        } else if (!shouldOn && isCurrentlyOn) {
-          sw.checked = false;
-          togglePump(i, true);
-        }
-
-        if (sw) sw.onchange = () => togglePump(i);
-      }
-    }
-  } finally {
-    autoControlLock = false;
-  }
-}
-
-// เพิ่ม argument isAuto = false เพื่อรู้ว่าใครเป็นคนสั่ง togglePump
-function togglePump(pump, isAuto = false) {
-  //แสดงเวลาเริ่มทำงาน
+function togglePump(pump) {
   const now = new Date();
   const { time: timeStr } = getDateTime(now);
   const sw = document.getElementById(`pump0${pump}Switch`);
@@ -127,28 +62,87 @@ function togglePump(pump, isAuto = false) {
 
   const status = sw.checked ? "ON" : "OFF";
 
-  const startEl = document.getElementById(`pump0${pump}Start`);
-  const humidityEl = document.getElementById(`pump0${pump}Humidity`);
+  db.ref(`pump_0${pump}/status`).once("value").then((snap) => {
+    const prevStatus = snap.val();
+    if (status === prevStatus) return;
 
-  if (status === "ON") {
     db.ref(`pump_0${pump}/status`).set(status);
-    db.ref(`pump_0${pump}/strTime`).set(timeStr);
-    if (!isAuto) console.log(`pump_0${pump} ทำการบันทึกเวลา ${status} เรียบร้อยแล้ว`);
-    if (startEl) startEl.textContent = timeStr;
-    if (humidityEl) humidityEl.textContent = Math.floor(Math.random() * 30 + 30) + "°C";
-  } else {
-    db.ref(`pump_0${pump}/status`).set(status);
-    if (startEl) startEl.textContent = "--:--";
-    if (humidityEl) humidityEl.textContent = "--°C";
+
+    const startEl = document.getElementById(`pump0${pump}Start`);
+    const humidityEl = document.getElementById(`pump0${pump}Humidity`);
+
+    if (status === "ON") {
+      db.ref(`pump_0${pump}/strTime`).set(timeStr);
+      if (startEl) startEl.textContent = timeStr;
+      if (humidityEl) humidityEl.textContent = Math.floor(Math.random() * 30 + 30) + "°C";
+    } else {
+      if (startEl) startEl.textContent = "--:--";
+      if (humidityEl) humidityEl.textContent = "--°C";
+    }
+  });
+}
+
+function autoControl() {
+  if (!globalConfig || Object.keys(pumpModes).length < 3) return;
+
+  const now = new Date();
+  const { time: nowTime } = getDateTime(now);
+  const tempText = (document.getElementById("temp") || {}).textContent || "";
+  const temp = parseFloat((tempText.match(/([\d.]+)/) || [])[0] || 0);
+
+  let slots = globalConfig.timeSlots;
+  if (!slots || !Array.isArray(slots) || !slots.length || !slots[0].start || !slots[0].end) {
+    // slot ยังไม่ถูกเซ็ต/ว่าง ไม่ต้องสั่งปั้มอะไร
+    return;
+  }
+
+  function isInAnyTimeSlot(time) {
+    return slots.some(({ start, end }) => {
+      if (!start || !end) return false;
+      if (start <= end) {
+        return start <= time && time <= end;
+      } else {
+        return (start <= time && time <= "23:59") || ("00:00" <= time && time <= end);
+      }
+    });
+  }
+
+  console.log("slots", JSON.stringify(slots), "nowTime", nowTime);
+  for (let i = 1; i <= 3; i++) {
+    if (pumpModes[i] === "auto") {
+      const shouldOn = isInAnyTimeSlot(nowTime) && temp > globalConfig.tempThreshold;
+
+      db.ref(`pump_0${i}/status`).once("value").then((snap) => {
+        const prevStatus = snap.val(); // "ON" หรือ "OFF"
+        const wantStatus = shouldOn ? "ON" : "OFF";
+
+        console.log(
+          `Pump${i} | Time: ${nowTime} | Temp: ${temp} | InSlot: ${isInAnyTimeSlot(nowTime)} | shouldOn: ${shouldOn} | prevStatus(Firebase): ${prevStatus} | wantStatus: ${wantStatus}`
+        );
+
+        if (prevStatus !== wantStatus) {
+          db.ref(`pump_0${i}/status`).set(wantStatus);
+          // อัปเดต UI
+          const sw = document.getElementById(`pump0${i}Switch`);
+          if (sw) sw.checked = shouldOn;
+          togglePump(i);
+          console.log(`>> เปลี่ยนสถานะ Pump${i} เป็น: ${wantStatus}`);
+        }
+      });
+    }
   }
 }
+
+
 
 function toggleMode(pumpId) {
   const isAuto = document.getElementById(`modeToggle${pumpId}`).checked;
   const mode = isAuto ? "auto" : "manual";
+
   db.ref(`pump_0${pumpId}/mode`).set(mode)
     .then(() => {
       console.log(`✅ อัปเดต mode: pump_0${pumpId} = ${mode}`);
+
       if (mode === "manual") {
         db.ref(`pump_0${pumpId}/status`).once("value")
           .then((snapshot) => {
@@ -189,31 +183,23 @@ function renderPumpSetting(pumpId) {
 }
 
 function saveGlobalConfig() {
-  const startTimeEl = document.getElementById("startTime");
-  const endTimeEl = document.getElementById("endTime");
   const tempEl = document.getElementById("tempThreshold");
+  const tempThreshold = tempEl ? parseInt(tempEl.value) : 0;
 
-  const startTime = startTimeEl ? startTimeEl.value : "";
-  const endTime = endTimeEl ? endTimeEl.value : "";
-  let tempThreshold = tempEl ? tempEl.value : "";
-  // Validate input
-  if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
-    alert("กรุณากรอกเวลาให้ถูกต้อง (hh:mm)");
-    return;
-  }
-  if (isNaN(parseFloat(tempThreshold))) {
-    alert("กรุณากรอกค่าอุณหภูมิให้ถูกต้อง");
-    return;
-  }
-  tempThreshold = parseFloat(tempThreshold);
-
-  const config = { startTime, endTime, tempThreshold };
+  const timeSlots = [];
+  const rows = document.querySelectorAll("#timeSlotsContainer .time-row");
+  rows.forEach(row => {
+    const start = row.querySelector(".startTime")?.value || "";
+    const end = row.querySelector(".endTime")?.value || "";
+    if (start && end) timeSlots.push({ start, end });
+  });
 
   db.ref("globalConfig")
-    .set(config)
-    .then(() => console.log("✅ บันทึก globalConfig แล้ว"))
-    .catch((err) => console.error("❌ ล้มเหลว:", err));
+    .set({ tempThreshold, timeSlots })
+    .then(() => console.log("✅ บันทึก timeSlots สำเร็จ"))
+    .catch(err => console.error("❌ บันทึกไม่สำเร็จ:", err));
 }
+
 
 function loadSettings() {
   const area = document.getElementById("settingsArea");
@@ -233,6 +219,7 @@ function loadSettings() {
     db.ref(`pump_0${pumpId}/mode`).on("value", (snapshot) => {
       const mode = snapshot.val() || "manual";
       const isAuto = mode === "auto";
+
       toggle.onchange = null;
       toggle.checked = isAuto;
       label.textContent = capitalize(mode);
@@ -240,22 +227,30 @@ function loadSettings() {
     });
   });
 
-  db.ref("globalConfig")
-    .once("value")
-    .then((snapshot) => {
-      const cfg = snapshot.val() || {};
-      const startEl = document.getElementById("startTime");
-      const endEl = document.getElementById("endTime");
-      const tempEl = document.getElementById("tempThreshold");
+  db.ref("globalConfig").once("value").then((snapshot) => {
+    const cfg = snapshot.val() || {};
+    const startEl = document.getElementById("startTime");
+    const endEl = document.getElementById("endTime");
+    const tempEl = document.getElementById("tempThreshold");
 
-      if (startEl) startEl.value = cfg.startTime || "";
-      if (endEl) endEl.value = cfg.endTime || "";
-      if (tempEl) tempEl.value = cfg.tempThreshold || "";
+    if (startEl) startEl.value = cfg.startTime || "";
+    if (endEl) endEl.value = cfg.endTime || "";
+    if (tempEl) tempEl.value = cfg.tempThreshold || "";
+  });
+
+  db.ref("globalConfig").once("value").then(snapshot => {
+    const cfg = snapshot.val() || {};
+    document.getElementById("tempThreshold").value = cfg.tempThreshold || "";
+
+    const container = document.getElementById("timeSlotsContainer");
+    container.innerHTML = "";
+    (cfg.timeSlots || []).forEach(slot => {
+      addTimeSlot(slot.start, slot.end);
     });
+  });
 }
 
 function capitalize(str) {
-  if (!str) return "";
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
@@ -289,49 +284,62 @@ function timeUpdate() {
 }
 
 async function loadWeather() {
-  try {
-    const res = await fetch("https://api.openweathermap.org/data/2.5/weather?lat=13.7563&lon=100.5018&units=metric&lang=th&appid=3fe26da4919fb8c89e790fab6d6ab83f");
-    if (!res.ok) throw new Error("Network response was not ok");
-    const data = await res.json();
+  const res = await fetch("https://api.openweathermap.org/data/2.5/weather?lat=13.7563&lon=100.5018&units=metric&lang=th&appid=3fe26da4919fb8c89e790fab6d6ab83f");
+  const data = await res.json();
 
-    const temp = data.main.temp.toFixed(1);
-    const humidity = data.main.humidity;
-    const light = data.weather[0].description;
+  const temp = data.main.temp.toFixed(1);
+  const humidity = data.main.humidity;
+  const light = data.weather[0].description;
 
-    const tempEl = document.getElementById("temp");
-    if (tempEl) tempEl.textContent = `🌡️ ${temp}°C`;
+  const tempEl = document.getElementById("temp");
+  if (tempEl) tempEl.textContent = `🌡️ ${temp}°C`;
 
-    const humidityEl = document.getElementById("humidity");
-    if (humidityEl) humidityEl.textContent = `💧 ${humidity}%`;
+  const humidityEl = document.getElementById("humidity");
+  if (humidityEl) humidityEl.textContent = `💧 ${humidity}%`;
 
-    const lightEl = document.getElementById("light");
-    if (lightEl) lightEl.textContent = `🌤️ ${light}`;
+  const lightEl = document.getElementById("light");
+  if (lightEl) lightEl.textContent = `🌤️ ${light}`;
 
-    return { temp: parseFloat(temp), humidity, light };
-  } catch (err) {
-    console.error("ไม่สามารถโหลดข้อมูลสภาพอากาศได้:", err);
-    const tempEl = document.getElementById("temp");
-    if (tempEl) tempEl.textContent = `🌡️ --°C`;
-    const humidityEl = document.getElementById("humidity");
-    if (humidityEl) humidityEl.textContent = `💧 --%`;
-    const lightEl = document.getElementById("light");
-    if (lightEl) lightEl.textContent = `🌤️ --`;
-    return { temp: 0, humidity: 0, light: "" };
-  }
+  return { temp: parseFloat(temp), humidity, light };
+}
+
+function addTimeSlot(start = "", end = "") {
+  const container = document.getElementById("timeSlotsContainer");
+
+  const slotDiv = document.createElement("div");
+  slotDiv.className = "time-row";
+
+  slotDiv.innerHTML = `
+    <label>เริ่มเวลา</label>
+    <input type="time" class="startTime" value="${start}" />
+    <label>สิ้นสุดเวลา</label>
+    <input type="time" class="endTime" value="${end}" />
+    <button class="remove-btn" onclick="removeTimeSlot(this)">ลบ</button>
+  `;
+
+  // บันทึกเมื่อมีการเปลี่ยนแปลงค่า
+  slotDiv.querySelectorAll("input").forEach(input => {
+    input.addEventListener("change", saveGlobalConfig);
+  });
+
+  container.appendChild(slotDiv);
+  saveGlobalConfig();
+}
+
+function removeTimeSlot(btn) {
+  const slotDiv = btn.parentElement;
+  slotDiv.remove();
+  saveGlobalConfig(); // บันทึกหลังลบ
 }
 
 window.onload = async () => {
-  try {
-    await loadDataFromFirebase();
-    await loadWeather();
-    if (document.getElementById("settingsArea")) {
-      loadSettings();
-    }
-    autoControl();
-    setInterval(autoControl, 3000);
-    timeUpdate();
-    setInterval(timeUpdate, 3000);
-  } catch (err) {
-    console.error("โหลดข้อมูลไม่สำเร็จ:", err);
+  await loadWeather();
+  await loadDataFromFirebase();
+  if (document.getElementById("settingsArea")) {
+    loadSettings();
   }
+  timeUpdate();
+  setInterval(timeUpdate, 5000);
+  setInterval(autoControl, 5000); // เรียกทีเดียว
+  autoControl(); // เรียกอีกทีหลังโหลดเสร็จ
 };
