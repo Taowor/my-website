@@ -25,7 +25,7 @@ function loadDataFromFirebase() {
       if (loaded === totalToLoad) resolve();
     }
 
-    db.ref("globalConfig").once("value", (snap) => {
+    db.ref("globalConfig").on("value", (snap) => {
       globalConfig = snap.val();
       checkLoaded();
     });
@@ -90,49 +90,34 @@ function autoControl() {
   const tempText = (document.getElementById("temp") || {}).textContent || "";
   const temp = parseFloat((tempText.match(/([\d.]+)/) || [])[0] || 0);
 
-  let slots = globalConfig.timeSlots;
-  if (!slots || !Array.isArray(slots) || !slots.length || !slots[0].start || !slots[0].end) {
-    // slot ยังไม่ถูกเซ็ต/ว่าง ไม่ต้องสั่งปั้มอะไร
-    return;
-  }
+  console.log("เวลา:", nowTime, "อุณหภูมิ:", temp);
+
+  const slots = globalConfig.timeSlots || [{ start: globalConfig.startTime, end: globalConfig.endTime }];
 
   function isInAnyTimeSlot(time) {
-    return slots.some(({ start, end }) => {
-      if (!start || !end) return false;
-      if (start <= end) {
-        return start <= time && time <= end;
-      } else {
-        return (start <= time && time <= "23:59") || ("00:00" <= time && time <= end);
-      }
-    });
+    return slots.some(({ start, end }) => start <= time && time <= end);
   }
 
-  console.log("slots", JSON.stringify(slots), "nowTime", nowTime);
   for (let i = 1; i <= 3; i++) {
     if (pumpModes[i] === "auto") {
       const shouldOn = isInAnyTimeSlot(nowTime) && temp > globalConfig.tempThreshold;
+      console.log(`ปั้ม ${i}: ควรเปิด?`, shouldOn);
 
-      db.ref(`pump_0${i}/status`).once("value").then((snap) => {
-        const prevStatus = snap.val(); // "ON" หรือ "OFF"
-        const wantStatus = shouldOn ? "ON" : "OFF";
+      const sw = document.getElementById(`pump0${i}Switch`);
+      const isCurrentlyOn = sw?.checked;
 
-        console.log(
-          `Pump${i} | Time: ${nowTime} | Temp: ${temp} | InSlot: ${isInAnyTimeSlot(nowTime)} | shouldOn: ${shouldOn} | prevStatus(Firebase): ${prevStatus} | wantStatus: ${wantStatus}`
-        );
-
-        if (prevStatus !== wantStatus) {
-          db.ref(`pump_0${i}/status`).set(wantStatus);
-          // อัปเดต UI
-          const sw = document.getElementById(`pump0${i}Switch`);
-          if (sw) sw.checked = shouldOn;
-          togglePump(i);
-          console.log(`>> เปลี่ยนสถานะ Pump${i} เป็น: ${wantStatus}`);
-        }
-      });
+      if (shouldOn && !isCurrentlyOn) {
+        console.log(`เปิดปั้ม ${i}`);
+        sw.checked = true;
+        togglePump(i);
+      } else if (!shouldOn && isCurrentlyOn) {
+        console.log(`ปิดปั้ม ${i}`);
+        sw.checked = false;
+        togglePump(i);
+      }
     }
   }
 }
-
 
 
 function toggleMode(pumpId) {
@@ -200,42 +185,24 @@ function saveGlobalConfig() {
     .catch(err => console.error("❌ บันทึกไม่สำเร็จ:", err));
 }
 
-
 function loadSettings() {
   const area = document.getElementById("settingsArea");
   if (!area) return;
-  area.innerHTML = "";
 
-  pumps.forEach((pumpId) => {
-    area.innerHTML += renderPumpSetting(pumpId);
-  });
+  area.innerHTML = pumps.map(pumpId => renderPumpSetting(pumpId)).join("");
 
-  pumps.forEach((pumpId) => {
+  pumps.forEach(pumpId => {
     const toggle = document.getElementById(`modeToggle${pumpId}`);
     const label = document.getElementById(`modeLabel${pumpId}`);
 
     if (!toggle || !label) return;
 
-    db.ref(`pump_0${pumpId}/mode`).on("value", (snapshot) => {
+    db.ref(`pump_0${pumpId}/mode`).on("value", snapshot => {
       const mode = snapshot.val() || "manual";
-      const isAuto = mode === "auto";
-
-      toggle.onchange = null;
-      toggle.checked = isAuto;
+      toggle.checked = mode === "auto";
       label.textContent = capitalize(mode);
       toggle.onchange = () => toggleMode(pumpId);
     });
-  });
-
-  db.ref("globalConfig").once("value").then((snapshot) => {
-    const cfg = snapshot.val() || {};
-    const startEl = document.getElementById("startTime");
-    const endEl = document.getElementById("endTime");
-    const tempEl = document.getElementById("tempThreshold");
-
-    if (startEl) startEl.value = cfg.startTime || "";
-    if (endEl) endEl.value = cfg.endTime || "";
-    if (tempEl) tempEl.value = cfg.tempThreshold || "";
   });
 
   db.ref("globalConfig").once("value").then(snapshot => {
@@ -243,9 +210,18 @@ function loadSettings() {
     document.getElementById("tempThreshold").value = cfg.tempThreshold || "";
 
     const container = document.getElementById("timeSlotsContainer");
-    container.innerHTML = "";
-    (cfg.timeSlots || []).forEach(slot => {
-      addTimeSlot(slot.start, slot.end);
+    container.innerHTML = (cfg.timeSlots || []).map(slot => 
+      `<div class="time-row">
+        <label>เริ่มเวลา</label>
+        <input type="time" class="startTime" value="${slot.start}" />
+        <label>สิ้นสุดเวลา</label>
+        <input type="time" class="endTime" value="${slot.end}" />
+        <button class="remove-btn" onclick="removeTimeSlot(this)">ลบ</button>
+      </div>`
+    ).join("");
+
+    container.querySelectorAll("input").forEach(input => {
+      input.addEventListener("change", saveGlobalConfig);
     });
   });
 }
@@ -277,30 +253,29 @@ function getDateTime(date) {
 }
 
 function timeUpdate() {
-  const updateEl = document.getElementById("lastUpdate");
-  const now = new Date();
-  const { thaiDateTime } = getDateTime(now);
-  if (updateEl) updateEl.textContent = thaiDateTime;
+    const updateEl = document.getElementById("lastUpdate");
+    const now = new Date();
+    const { thaiDateTime } = getDateTime(now);
+    if (updateEl) updateEl.textContent = thaiDateTime;
 }
 
 async function loadWeather() {
-  const res = await fetch("https://api.openweathermap.org/data/2.5/weather?lat=13.7563&lon=100.5018&units=metric&lang=th&appid=3fe26da4919fb8c89e790fab6d6ab83f");
-  const data = await res.json();
+  try {
+    const res = await fetch("https://api.openweathermap.org/data/2.5/weather?lat=13.7563&lon=100.5018&units=metric&lang=th&appid=3fe26da4919fb8c89e790fab6d6ab83f");
+    const data = await res.json();
 
-  const temp = data.main.temp.toFixed(1);
-  const humidity = data.main.humidity;
-  const light = data.weather[0].description;
+    const temp = data.main.temp.toFixed(1);
+    const humidity = data.main.humidity;
+    const light = data.weather[0].description;
 
-  const tempEl = document.getElementById("temp");
-  if (tempEl) tempEl.textContent = `🌡️ ${temp}°C`;
+    document.getElementById("temp").textContent = `🌡️ ${temp}°C`;
+    document.getElementById("humidity").textContent = `💧 ${humidity}%`;
+    document.getElementById("light").textContent = `🌤️ ${light}`;
 
-  const humidityEl = document.getElementById("humidity");
-  if (humidityEl) humidityEl.textContent = `💧 ${humidity}%`;
-
-  const lightEl = document.getElementById("light");
-  if (lightEl) lightEl.textContent = `🌤️ ${light}`;
-
-  return { temp: parseFloat(temp), humidity, light };
+    return { temp: parseFloat(temp), humidity, light };
+  } catch (err) {
+    console.error("❌ Weather API Error:", err);
+  }
 }
 
 function addTimeSlot(start = "", end = "") {
@@ -339,7 +314,7 @@ window.onload = async () => {
     loadSettings();
   }
   timeUpdate();
-  setInterval(timeUpdate, 5000);
-  setInterval(autoControl, 5000); // เรียกทีเดียว
-  autoControl(); // เรียกอีกทีหลังโหลดเสร็จ
+  setInterval(timeUpdate, 1000);
+  autoControl();
+  setInterval(autoControl, 1000);
 };
