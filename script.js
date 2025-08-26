@@ -9,12 +9,23 @@ const firebaseConfig = {
   appId: "1:605653634791:web:ec3f48c97a919a36795972",
 };
 
+// เริ่มต้น Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const pumpModes = {};
-let globalConfig = {};
+let globalConfig = {
+  // ตั้งค่าพิกัดเริ่มต้นเป็นกรุงเทพฯ
+  location: {
+    lat: 13.7563,
+    lon: 100.5018
+  },
+  tempThreshold: 30,
+  humidityThreshold: 50, // ค่าเริ่มต้นสำหรับความชื้น
+  weatherCondition: "Clear" // ค่าเริ่มต้นสำหรับสภาพอากาศ
+};
 const pumps = [1, 2, 3];
 
+// โหลดข้อมูลทั้งหมดจาก Firebase เมื่อเริ่มต้น
 function loadDataFromFirebase() {
   return new Promise((resolve) => {
     const totalToLoad = 1 + pumps.length;
@@ -25,11 +36,28 @@ function loadDataFromFirebase() {
       if (loaded === totalToLoad) resolve();
     }
 
+    // โหลด globalConfig และตั้งค่าเริ่มต้นหากไม่มีข้อมูล
     db.ref("globalConfig").on("value", (snap) => {
-      globalConfig = snap.val();
+      globalConfig = snap.val() || {};
+      if (!globalConfig.location) {
+          globalConfig.location = {
+              lat: 13.7563,
+              lon: 100.5018
+          };
+      }
+      if (!globalConfig.tempThreshold) {
+          globalConfig.tempThreshold = 30;
+      }
+      if (!globalConfig.humidityThreshold) {
+          globalConfig.humidityThreshold = 50;
+      }
+      if (!globalConfig.weatherCondition) {
+          globalConfig.weatherCondition = "Clear";
+      }
       checkLoaded();
     });
 
+    // โหลดสถานะและโหมดของปั๊มแต่ละตัว
     for (let i of pumps) {
       db.ref(`pump_0${i}`).on("value", (snap) => {
         const val = snap.val() || {};
@@ -43,7 +71,7 @@ function loadDataFromFirebase() {
         const modeText = document.getElementById(`pump0${i}Mode`);
         if (sw) {
           sw.checked = val.status === "ON";
-          sw.disabled = pumpModes[i] === "auto";
+          sw.disabled = pumpModes[i] === "auto"; // ปิดการใช้งานสวิตช์เมื่อเป็นโหมด Auto
         }
         if (statusText) statusText.textContent = val.status === "ON" ? "เปิด" : "ปิด";
         if (modeText) modeText.textContent = pumpModes[i] === "auto" ? "Auto" : "Manual";
@@ -54,6 +82,7 @@ function loadDataFromFirebase() {
   });
 }
 
+// ควบคุมการเปิด-ปิดปั๊ม
 function togglePump(pump) {
   const now = new Date();
   const { time: timeStr } = getDateTime(now);
@@ -82,17 +111,26 @@ function togglePump(pump) {
   });
 }
 
+// ฟังก์ชันควบคุมอัตโนมัติ
 function autoControl() {
   if (!globalConfig || Object.keys(pumpModes).length < 3) return;
 
   const now = new Date();
   const { time: nowTime } = getDateTime(now);
+
+  // ดึงค่าอุณหภูมิและความชื้นจากหน้าเว็บ
   const tempText = (document.getElementById("temp") || {}).textContent || "";
   const temp = parseFloat((tempText.match(/([\d.]+)/) || [])[0] || 0);
 
-  console.log("เวลา:", nowTime, "อุณหภูมิ:", temp);
+  const humidityText = (document.getElementById("humidity") || {}).textContent || "";
+  const humidity = parseFloat((humidityText.match(/([\d.]+)/) || [])[0] || 0);
 
-  const slots = globalConfig.timeSlots || [{ start: globalConfig.startTime, end: globalConfig.endTime }];
+  // ดึงข้อมูลสภาพอากาศหลัก (เช่น "Clear", "Clouds", "Rain")
+  const weatherMain = (document.getElementById("light") || {}).textContent || "";
+  
+  console.log("เวลา:", nowTime, "อุณหภูมิ:", temp, "ความชื้น:", humidity, "สภาพอากาศ:", weatherMain);
+
+  const slots = globalConfig.timeSlots || [];
 
   function isInAnyTimeSlot(time) {
     return slots.some(({ start, end }) => start <= time && time <= end);
@@ -100,7 +138,11 @@ function autoControl() {
 
   for (let i = 1; i <= 3; i++) {
     if (pumpModes[i] === "auto") {
-      const shouldOn = isInAnyTimeSlot(nowTime) && temp > globalConfig.tempThreshold;
+      const tempCondition = temp > globalConfig.tempThreshold;
+      const humidityCondition = humidity < globalConfig.humidityThreshold;
+      const weatherCondition = globalConfig.weatherCondition === "" || weatherMain.includes(globalConfig.weatherCondition);
+      
+      const shouldOn = isInAnyTimeSlot(nowTime) && tempCondition && humidityCondition && weatherCondition;
       console.log(`ปั้ม ${i}: ควรเปิด?`, shouldOn);
 
       const sw = document.getElementById(`pump0${i}Switch`);
@@ -119,7 +161,7 @@ function autoControl() {
   }
 }
 
-
+// สลับโหมดของปั๊ม (Auto/Manual)
 function toggleMode(pumpId) {
   const isAuto = document.getElementById(`modeToggle${pumpId}`).checked;
   const mode = isAuto ? "auto" : "manual";
@@ -149,6 +191,7 @@ function toggleMode(pumpId) {
     .catch((err) => console.error("❌ ล้มเหลว:", err));
 }
 
+// แสดงส่วนการตั้งค่าสำหรับปั๊มแต่ละตัว
 function renderPumpSetting(pumpId) {
   return `
     <div class="pump-setting" id="pump${pumpId}Setting">
@@ -167,9 +210,13 @@ function renderPumpSetting(pumpId) {
   `;
 }
 
+// บันทึกการตั้งค่าทั้งหมดลงใน Firebase
 function saveGlobalConfig() {
   const tempEl = document.getElementById("tempThreshold");
   const tempThreshold = tempEl ? parseInt(tempEl.value) : 0;
+  
+  const humidityThreshold = parseInt(document.getElementById("humidityThreshold").value);
+  const weatherCondition = document.getElementById("weatherCondition").value;
 
   const timeSlots = [];
   const rows = document.querySelectorAll("#timeSlotsContainer .time-row");
@@ -179,12 +226,26 @@ function saveGlobalConfig() {
     if (start && end) timeSlots.push({ start, end });
   });
 
+  // ดึงค่าจากช่องกรอกข้อมูลเดียว, แยกและแปลงเป็นตัวเลข
+  const locationInput = document.getElementById("locationInput");
+  const [lat, lon] = locationInput.value.split(',').map(Number);
+  
+  // อัปเดตตัวแปร globalConfig
+  globalConfig.tempThreshold = tempThreshold;
+  globalConfig.timeSlots = timeSlots;
+  globalConfig.location = { lat, lon };
+  globalConfig.humidityThreshold = humidityThreshold;
+  globalConfig.weatherCondition = weatherCondition;
+
   db.ref("globalConfig")
-    .set({ tempThreshold, timeSlots })
-    .then(() => console.log("✅ บันทึก timeSlots สำเร็จ"))
+    .set(globalConfig)
+    .then(() => console.log("✅ บันทึก globalConfig สำเร็จ"))
     .catch(err => console.error("❌ บันทึกไม่สำเร็จ:", err));
+
+  loadWeather(); // โหลดข้อมูลสภาพอากาศใหม่ทันทีที่บันทึก
 }
 
+// โหลดการตั้งค่าจาก Firebase มาแสดงบนหน้าเว็บ
 function loadSettings() {
   const area = document.getElementById("settingsArea");
   if (!area) return;
@@ -208,6 +269,20 @@ function loadSettings() {
   db.ref("globalConfig").once("value").then(snapshot => {
     const cfg = snapshot.val() || {};
     document.getElementById("tempThreshold").value = cfg.tempThreshold || "";
+    
+    // โหลดค่าความชื้นและสภาพอากาศ
+    if (document.getElementById("humidityThreshold")) {
+        document.getElementById("humidityThreshold").value = cfg.humidityThreshold || 50;
+    }
+    if (document.getElementById("weatherCondition")) {
+        document.getElementById("weatherCondition").value = cfg.weatherCondition || "";
+    }
+    
+    // โหลดค่าละติจูดและลองจิจูดจาก Firebase
+    const savedLocation = cfg.location || globalConfig.location;
+    if (document.getElementById("locationInput")) {
+        document.getElementById("locationInput").value = `${savedLocation.lat}, ${savedLocation.lon}`;
+    }
 
     const container = document.getElementById("timeSlotsContainer");
     container.innerHTML = (cfg.timeSlots || []).map(slot => 
@@ -226,10 +301,12 @@ function loadSettings() {
   });
 }
 
+// ฟังก์ชันแปลงตัวอักษรแรกเป็นตัวพิมพ์ใหญ่
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// ฟังก์ชันสำหรับแปลงวันที่และเวลาให้อยู่ในรูปแบบไทย
 function getDateTime(date) {
   const days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
   const months = [
@@ -252,6 +329,7 @@ function getDateTime(date) {
   };
 }
 
+// อัปเดตเวลาล่าสุด
 function timeUpdate() {
     const updateEl = document.getElementById("lastUpdate");
     const now = new Date();
@@ -259,25 +337,29 @@ function timeUpdate() {
     if (updateEl) updateEl.textContent = thaiDateTime;
 }
 
+// ดึงข้อมูลสภาพอากาศจาก OpenWeatherMap API
 async function loadWeather() {
   try {
-    const res = await fetch("https://api.openweathermap.org/data/2.5/weather?lat=13.7563&lon=100.5018&units=metric&lang=th&appid=3fe26da4919fb8c89e790fab6d6ab83f");
+    const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${globalConfig.location.lat}&lon=${globalConfig.location.lon}&units=metric&lang=th&appid=3fe26da4919fb8c89e790fab6d6ab83f`);
     const data = await res.json();
 
     const temp = data.main.temp.toFixed(1);
     const humidity = data.main.humidity;
-    const light = data.weather[0].description;
+    const weatherDescription = data.weather[0].description;
+    const weatherMain = data.weather[0].main; // เพิ่มส่วนนี้
 
     document.getElementById("temp").textContent = `🌡️ ${temp}°C`;
     document.getElementById("humidity").textContent = `💧 ${humidity}%`;
-    document.getElementById("light").textContent = `🌤️ ${light}`;
+    document.getElementById("light").textContent = `🌤️ ${weatherDescription}`;
 
-    return { temp: parseFloat(temp), humidity, light };
+    return { temp: parseFloat(temp), humidity, weatherMain }; // คืนค่า weatherMain ด้วย
   } catch (err) {
     console.error("❌ Weather API Error:", err);
+    return null; // คืนค่า null เพื่อป้องกัน error
   }
 }
 
+// เพิ่มช่วงเวลาในหน้าตั้งค่า
 function addTimeSlot(start = "", end = "") {
   const container = document.getElementById("timeSlotsContainer");
 
@@ -301,20 +383,21 @@ function addTimeSlot(start = "", end = "") {
   saveGlobalConfig();
 }
 
+// ลบช่วงเวลา
 function removeTimeSlot(btn) {
   const slotDiv = btn.parentElement;
   slotDiv.remove();
   saveGlobalConfig(); // บันทึกหลังลบ
 }
 
+// เริ่มต้นการทำงานทั้งหมดเมื่อหน้าเว็บโหลดเสร็จ
 window.onload = async () => {
-  await loadWeather();
   await loadDataFromFirebase();
+  await loadWeather();
   if (document.getElementById("settingsArea")) {
     loadSettings();
   }
   timeUpdate();
   setInterval(timeUpdate, 1000);
-  autoControl();
   setInterval(autoControl, 1000);
 };
