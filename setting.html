@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ตั้งค่าปั๊ม</title>
+
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <span class="text-Title">🛠️ ตั้งค่าโหมดปั๊มน้ำ</span>
+    <div id="settingsArea"></div>
+
+    <div class="global-setting">
+      <span class="text-Title">🛠️ ตั้งค่าช่วงเวลา</span>
+      <div id="timeSlotsContainer"></div>
+      <button onclick="addTimeSlot()" class="add-btn">+ เพิ่มช่วงเวลา</button>
+    </div>
+    
+    <div class="global-setting">
+        <span class="text-Title">🛠️ ตั้งค่าพิกัดและสภาพอากาศ</span>
+        <label for="locationInput">ละติจูด, ลองจิจูด:</label>
+        <input type="text" id="locationInput" onchange="saveGlobalConfig()" placeholder="เช่น 12.965021, 101.242117"/>
+        <label>อุณหภูมิเกณฑ์ (°C)</label>
+        <input type="number" id="tempThreshold" min="0" max="100" onchange="saveGlobalConfig()"/>
+        <label>ความชื้นเกณฑ์ (%)</label>
+        <input type="number" id="humidityThreshold" min="0" max="100" onchange="saveGlobalConfig()"/>
+        <label for="weatherCondition">สภาพอากาศที่ต้องการเปิด:</label>
+        <select id="weatherCondition" onchange="saveGlobalConfig()">
+            <option value="">ไม่ระบุ</option>
+            <option value="Clear">ท้องฟ้าแจ่มใส (ID: 800)</option>
+            <option value="Clouds">มีเมฆมาก (ID: 80x)</option>
+            <option value="Rain">ฝนตก (ID: 5xx)</option>
+            <option value="Drizzle">ฝนปรอย (ID: 3xx)</option>
+            <option value="Thunderstorm">พายุฝนฟ้าคะนอง (ID: 2xx)</option>
+        </select>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+    <script src="script.js"></script>
+
+    <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        if (typeof loadSettings === "function") {
+          loadSettings();
+        } else {
+          console.error("⛔ ไม่พบฟังก์ชัน loadSettings()");
+        }
+      });
+    </script>
+  </body>
+</html>
