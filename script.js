@@ -137,29 +137,39 @@ function autoControl() {
             const currentWeatherMain = weatherMain;
             const currentWindSpeed = windSpeed;
 
+            const setHumidity = globalConfig.humidityThreshold;
+            const setTemp = globalConfig.tempThreshold;
+            const setWeatherMain = globalConfig.weatherCondition;
+
             console.log("------------------------------------------");
             console.log("ข้อมูลล่าสุดจาก loadWeather:");
-            console.log(`อุณหภูมิ: ${currentTemp}°C`);
-            console.log(`ความชื้น: ${currentHumidity}%`);
-            console.log(`สภาพอากาศหลัก: ${currentWeatherMain}`);
+            console.log(`อุณหภูมิ: ${currentTemp}°C / ${setTemp}`);
+            console.log(`ความชื้น: ${currentHumidity}% / ${setHumidity}`);
+            console.log(`สภาพอากาศหลัก: ${currentWeatherMain} / ${setWeatherMain}`);
             console.log(`ความเร็วลม: ${currentWindSpeed} m/s`);
             
             // เงื่อนไขสำหรับ "ควรปิดปั๊ม"
-            const highHumidity = currentHumidity > 80;
-            const isRainy = currentWeatherMain.includes("Rain");
-            const isWindy = currentWindSpeed > 20;
+            const highHumidity = currentHumidity > setHumidity;
+            const isRainy = currentWeatherMain === setWeatherMain;
+            //const isWindy = currentWindSpeed > 20;
 
             // เงื่อนไขสำหรับ "ควรเปิดปั๊ม"
             const isTimeForWatering = isInAnyTimeSlot(nowTime); // ตอนนี้ฟังก์ชันนี้รู้จักแล้ว
-            const isGroundDry = currentHumidity < globalConfig.humidityThreshold;
-            const isHot = currentTemp > globalConfig.tempThreshold;
+            const isGroundDry = currentHumidity > setHumidity;
+            const isHot = currentTemp > setTemp;
 
-            const shouldBeOff = isRainy || highHumidity || isWindy;
-            const shouldBeOn = isTimeForWatering && isGroundDry && isHot && !shouldBeOff;
+            const shouldBeOff = !isRainy && highHumidity;
+            const shouldBeOn = isTimeForWatering && isGroundDry && isHot && shouldBeOff;
+            console.log(`เวลา: ${isTimeForWatering}`);
+            console.log(`ความชื้น: ${isGroundDry}`);
+            console.log(`อุณหภูมิ: ${isHot}`);
+            console.log("------------------------------------------");
+            console.log(!isRainy, highHumidity, `สภาพอากาศ: ${shouldBeOff}`);
+
             
             for (let i = 1; i <= 3; i++) {
                 if (pumpModes[i] === "auto") {
-                    console.log(`ปั้ม ${i}: ควรเปิด?`, shouldBeOn);
+                    console.log(`ปั้ม ${i}: autoMode?`, shouldBeOn);
                     
                     const sw = document.getElementById(`pump0${i}Switch`);
                     const isCurrentlyOn = sw?.checked;
@@ -419,6 +429,6 @@ window.onload = async () => {
     loadSettings();
   }
   timeUpdate();
-  setInterval(timeUpdate, 1000);
-  setInterval(autoControl, 1000);
+  setInterval(timeUpdate, 3000);
+  setInterval(autoControl, 3000);
 };
