@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>รายละเอียดแปลงปลูก</title>
+    </head>
+  <body>
+    <span class="text-Title">🌿 รายละเอียดแปลงปลูก</span>
+
+    <div class="global-setting">
+        <button onclick="editPlot('new')" class="add-btn add-plot-btn">+ เพิ่มแปลงปลูก</button>
+        <div id="plantingDetailsContainer">
+            กำลังโหลดข้อมูล...
+        </div>
+    </div>
+
+    <div id="plotFormContainer" style="display: none;">
+        <div class="plot-form">
+            <h3 id="formTitle" style="color: #0a1a64;">เพิ่มแปลงปลูกใหม่</h3>
+            <hr />
+            
+            <input type="hidden" id="formPlotRefId">
+
+            <label for="formPlotId">หมายเลขแปลง (เช่น 1, 2, 3)</label>
+            <input type="number" id="formPlotId" min="1" required/>
+            
+            <label for="formCropName">พืชที่ปลูก</label>
+            <input type="text" id="formCropName" required/>
+
+            <label for="formDatePlanted">วันเริ่มปลูก</label>
+            <input type="date" id="formDatePlanted" />
+
+            <label for="formPlantingMethod">วิธีการปลูก</label>
+            <select id="formPlantingMethod">
+                <option value="soil">ปลูกในดิน</option>
+                <option value="hydro">ปลูกในน้ำ (Hydroponics)</option>
+            </select>
+
+            <label for="formNotes">หมายเหตุ</label>
+            <input type="text" id="formNotes" />
+
+            <div class="form-actions">
+                <button class="add-btn" onclick="savePlotDetail()">บันทึก</button>
+                <button class="delete-btn" onclick="closePlotForm()">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+  </body>
+</html>

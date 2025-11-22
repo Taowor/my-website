@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tuawor Smart Farm</title>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="script.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <div class="header">
+      <div class="text">Tuawor Smart Farm</div>
+      <div class="text-Time" id="lastUpdate"></div>
+    </div>
+
+    <div class="container">
+      <div id="homePage">
+        <div class="text-Title">ภาพรวมระบบ</div>
+        <div class="card-mainEnvi">
+          <div class="column">
+            <div>
+              <div class="text-label">อุณหภูมิ</div>
+              <div class="text-value" id="temp">--</div>
+            </div>
+            <div>
+              <div class="text-label">ความชื้น</div>
+              <div class="text-value" id="humidity">--</div>
+            </div>
+            <div>
+              <div class="text-label">แสงแดด</div>
+              <div class="text-value" id="light">--</div>
+            </div>
+          </div>
+          <div class="column" id="pumpOverview">
+            </div>
+        </div>
+
+        <div class="text-Title">การควบคุม</div>
+        <div>
+          <div id="pumpControls">
+            </div>
+        </div>
+        
+        <div class="text-Title">🌿 ข้อมูลแปลงปลูก (สรุป)</div>
+        <div class="global-setting" id="plantingSummaryContainer">
+          <div class="text-Detail" id="plantSummaryLoading">กำลังโหลดข้อมูลแปลงปลูก...</div>
+        </div>
+        
+        <div class="text-Title">รายละเอียด</div>
+        <div class="global-setting">
+          <div class="text-Detail">
+            ข้อมูลรายละเอียดการทำงานของระบบอื่นๆ
+          </div>
+        </div>
+        
+      </div>
+
+      <div id="settingPage" style="display: none"></div>
+      <div id="detailPage" style="display: none"></div>
+    </div>
+
+    <footer>
+      <div>
+        <a href="#" onclick="loadPage('home')">🏠<br />หน้าหลัก</a>
+      </div>
+      <div>
+        <a href="#" onclick="loadPage('detail')">🌿<br />แปลงปลูก</a>
+      </div>
+      <div>
+        <a href="#" onclick="loadPage('setting')">⚙️<br />ตั้งค่า</a>
+      </div>
+    </footer>
+
+    <script>
+      function loadPage(page) {
+        const home = document.getElementById("homePage");
+        const setting = document.getElementById("settingPage");
+        const detail = document.getElementById("detailPage");
+
+        home.style.display = "none";
+        setting.style.display = "none";
+        detail.style.display = "none";
+
+        if (page === "home") {
+          home.style.display = "block";
+          if (typeof renderHomeUI === "function") {
+             renderHomeUI(); 
+          }
+        } else if (page === "setting") {
+          setting.style.display = "block";
+          if (!setting.innerHTML.trim()) {
+            fetch("setting.html")
+              .then((res) => res.text())
+              .then((html) => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, "text/html");
+                setting.innerHTML = doc.body.innerHTML;
+
+                if (typeof loadSettings === "function") {
+                  loadSettings();
+                } else {
+                  console.warn("⚠️ ไม่พบฟังก์ชัน loadSettings()");
+                }
+              })
+              .catch((err) => {
+                console.error("⚠️ ไม่สามารถโหลด setting.html", err);
+              });
+          } else {
+             if (typeof loadSettings === "function") {
+                 loadSettings();
+             }
+          }
+        } else if (page === "detail") {
+          detail.style.display = "block";
+          if (!detail.innerHTML.trim()) {
+            fetch("planting_detail.html")
+              .then((res) => res.text())
+              .then((html) => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, "text/html");
+                detail.innerHTML = doc.body.innerHTML;
+
+                if (typeof loadPlantingDetails === "function") {
+                  loadPlantingDetails();
+                } else {
+                  console.warn("⚠️ ไม่พบฟังก์ชัน loadPlantingDetails()");
+                }
+              })
+              .catch((err) => {
+                console.error("⚠️ ไม่สามารถโหลด planting_detail.html", err);
+              });
+          } else {
+            if (typeof loadPlantingDetails === "function") {
+              loadPlantingDetails();
+            }
+          }
+        }
+      }
+    </script>
+  </body>
+</html>

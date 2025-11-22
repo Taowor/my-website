@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ตั้งค่าปั๊ม</title>
+
+    <link rel="stylesheet" href="style.css" />
+    </head>
+
+  <body>
+    <span class="text-Title">🛠️ ตั้งค่าโหมดปั๊มน้ำ</span>
+    <div class="global-setting">
+      <div id="settingsArea"></div>
+      <button onclick="editPump('new')" class="add-btn">+ เพิ่มปั้มน้ำ</button>
+    </div>
+      
+    <span class="text-Title">🛠️ ตั้งค่าช่วงเวลา</span>
+    <div class="global-setting">
+      <div id="timeSlotsContainer"></div>
+      <button onclick="addTimeSlot()" class="add-btn">+ เพิ่มช่วงเวลา</button>
+    </div>
+
+    <span class="text-Title">🛠️ ตั้งค่าพิกัดและสภาพอากาศ</span>
+    <div class="global-setting">
+      <label for="locationInput">ละติจูด, ลองจิจูด:</label>
+      <input type="text" id="locationInput" onchange="saveGlobalConfig()" placeholder="เช่น 12.965021, 101.242117"/>
+      <label>อุณหภูมิเกณฑ์ (°C)</label>
+      <input type="number" id="tempThreshold" min="0" max="100" onchange="saveGlobalConfig()"/>
+      <label>ความชื้นเกณฑ์ (%)</label>
+      <input type="number" id="humidityThreshold" min="0" max="100" onchange="saveGlobalConfig()"/>
+      <label for="weatherCondition">สภาพอากาศที่ต้องการเปิด:</label>
+      <select id="weatherCondition" onchange="saveGlobalConfig()">
+        <option value="">ไม่ระบุ</option>
+        <option value="Clear">ท้องฟ้าแจ่มใส</option>
+        <option value="Clouds">มีเมฆมาก</option>
+        <option value="Rain">ฝนตก</option>
+        <option value="Drizzle">ฝนปรอย</option>
+        <option value="Thunderstorm">พายุฝนฟ้าคะนอง</option>
+      </select>
+    </div>
+    
+    <div id="pumpFormContainer" style="display: none;">
+        <div class="plot-form">
+            <h3 id="pumpFormTitle" style="color: #0a1a64;">จัดการปั้มน้ำ</h3>
+            <hr />
+            
+            <input type="hidden" id="originalPumpId"> 
+
+            <label for="pumpIdInput">หมายเลขปั้ม (Pump ID)</label>
+            <input type="number" id="pumpIdInput" min="1" required/>
+            
+            <div class="form-actions">
+                <button class="add-btn" onclick="savePumpDetail()">บันทึก</button>
+                <button class="delete-btn" onclick="closePumpForm()">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+  </body>
+</html>
